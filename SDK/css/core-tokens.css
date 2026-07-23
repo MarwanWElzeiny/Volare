@@ -1,0 +1,129 @@
+/* Volare Core Design Tokens — Canonical source of truth for theming */
+
+:root {
+    /* ═══════════════════════════════════════════════════════════════════
+       SDK Tokens (--vlr-* namespace)
+       Override these for custom themes.
+       ═══════════════════════════════════════════════════════════════════ */
+    --vlr-accent: rgb(100, 150, 255);
+    --vlr-bg: #000000;
+
+    /* Base color channels — override to retint every glass surface / shadow / text.
+       Used as rgba(var(--vlr-surface-rgb), <alpha>) across all component CSS. */
+    --vlr-surface-rgb: 255, 255, 255;
+    --vlr-shadow-rgb: 0, 0, 0;
+    --vlr-surface-dark-rgb: 10, 10, 10;
+    --vlr-danger-rgb: 255, 107, 107;
+    --vlr-danger: rgb(var(--vlr-danger-rgb));
+    --vlr-text-muted: #e0e0e0;
+    --vlr-ambient-glow: radial-gradient(ellipse at center, rgba(0, 123, 255, 0.603) 0%, rgba(175, 82, 222, 0.651) 35%, rgba(255, 45, 85, 0.08) 70%, transparent 100%);
+
+    /* Component surface tints — dark panel/overlay backgrounds. Override to retheme. */
+    --vlr-surface-panel-rgb: 30, 30, 30;
+    --vlr-surface-overlay-rgb: 20, 20, 20;
+    --vlr-surface-deep-rgb: 15, 15, 15;
+    --vlr-surface-inspector-rgb: 30, 30, 40;
+    --vlr-surface-mobile-rgb: 27, 27, 27;
+    --vlr-scrollbar-rgb: 92, 92, 92;
+    --vlr-border-solid: rgb(39, 39, 39);
+    --vlr-track-bg: #2a2a2a;
+    --vlr-control-track: #2121215a;
+    --vlr-panel-bg: linear-gradient(185deg, rgba(0, 0, 0, 0.46), rgba(15, 15, 15, 0.2));
+    --vlr-glass-bg: linear-gradient(185deg, rgba(0, 0, 0, 0.46), rgba(15, 15, 15, 0.2));
+    --vlr-glass-bg-strong: linear-gradient(185deg, rgba(0, 0, 0, 0.6), rgba(15, 15, 15, 0.35));
+    --vlr-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+    --vlr-glass-blur: blur(35px) saturate(150%);
+    --vlr-radius: 20px;
+    --vlr-control-size: 48px;
+    --vlr-font-family: 'Poppins', sans-serif;
+    --vlr-text-primary: rgba(255, 255, 255, 0.95);
+    --vlr-text-secondary: rgba(255, 255, 255, 0.7);
+    --vlr-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --vlr-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --vlr-control-bg: rgba(255, 255, 255, 0.15);
+    --vlr-control-bg-hover: rgba(255, 255, 255, 0.25);
+    --vlr-control-bg-active: rgba(255, 255, 255, 0.12);
+    --vlr-control-disabled-opacity: 0.35;
+    --vlr-motion-fast: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --vlr-motion-normal: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Glass Morphism
+       ═══════════════════════════════════════════════════════════════════ */
+    --glass-bg-light: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    --glass-bg-medium: linear-gradient(135deg, rgba(200, 200, 200, 0.14) 0%, rgba(200, 200, 200, 0.1) 100%);
+    --glass-bg-dark: linear-gradient(135deg, rgba(10, 10, 10, 0.85) 0%, rgba(10, 10, 10, 0.75) 100%);
+    --glass-bg-submit-btn: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.88) 50%, rgba(255, 255, 255, 0.85) 100%);
+    --glass-bg-playback: linear-gradient(135deg, rgba(155, 155, 155, 0.28) 0%, rgba(155, 155, 155, 0.22) 100%);
+    --glass-bg-active-tab: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+    --glass-bg-hdri-slider: linear-gradient(135deg, rgba(205, 205, 205, 0.2), rgba(255, 255, 255, 0.1));
+    --glass-bg-hdri-slider-checked: linear-gradient(135deg, rgba(145, 145, 145, 0.596), rgb(172, 172, 172));
+    --glass-bg-hover-light: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Backdrop Blur
+       ═══════════════════════════════════════════════════════════════════ */
+    --backdrop-blur-sm: blur(25px) saturate(150%);
+    --backdrop-blur-md: blur(30px) saturate(150%);
+    --backdrop-blur-lg: blur(35px) saturate(150%);
+    --backdrop-blur-xl: blur(40px) saturate(180%);
+    --backdrop-blur-xxl: blur(40px) saturate(200%);
+    --backdrop-blur-hud: blur(40px) saturate(150%);
+    --backdrop-blur-uv: blur(30px);
+    --backdrop-blur-model-notice: blur(60px) saturate(200%);
+    --backdrop-blur-hdri-change: blur(10px);
+    --backdrop-blur-loading: blur(10px);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Borders
+       ═══════════════════════════════════════════════════════════════════ */
+    --border-light: 1px solid rgba(255, 255, 255, 0.06);
+    --border-medium: 1px solid rgba(255, 255, 255, 0.08);
+    --border-heavy: 1px solid rgba(255, 255, 255, 0.12);
+    --border-thick: 1.5px solid rgba(255, 255, 255, 0.15);
+    --border-submit-btn: 1px solid rgba(255, 255, 255, 0.2);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Shadows
+       ═══════════════════════════════════════════════════════════════════ */
+    --shadow-xs: 0 3px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08), inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.06);
+    --shadow-xl: 0 40px 80px rgba(0, 0, 0, 0.35), 0 20px 40px rgba(0, 0, 0, 0.25), 0 8px 16px rgba(0, 0, 0, 0.15), inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    --shadow-hud: 0 20px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-button-base: 0 8px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --shadow-submit-btn: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08), inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    --shadow-loading-bar: 0px 0px 15px rgba(255, 255, 255, 0.5);
+
+    --shadow-hover-sm: 0 6px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --shadow-hover-md: 0 8px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --shadow-hover-lg: 0 12px 36px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-hover-xl: 0 16px 48px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-hover-notice-card: 0 50px 100px rgba(0, 0, 0, 0.4), 0 25px 50px rgba(0, 0, 0, 0.3), 0 10px 20px rgba(0, 0, 0, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.12);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Text Colors
+       ═══════════════════════════════════════════════════════════════════ */
+    --text-color-primary: rgba(255, 255, 255, 0.95);
+    --text-color-secondary: rgba(255, 255, 255, 0.9);
+    --text-color-tertiary: rgba(255, 255, 255, 0.75);
+    --text-color-disabled: rgb(200, 200, 200);
+    --text-color-button: rgb(223, 223, 223);
+    --text-color-black: rgba(0, 0, 0, 0.9);
+    --text-color-white: white;
+    --text-color-blue: rgb(100, 150, 255);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Transitions
+       ═══════════════════════════════════════════════════════════════════ */
+    --transition-fast: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-normal: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-slow: 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Layout
+       ═══════════════════════════════════════════════════════════════════ */
+    --vh: 1vh;
+}

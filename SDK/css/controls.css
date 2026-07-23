@@ -1,0 +1,317 @@
+/* Volare Controls — Wireframe bar, vlr-op-modes, cooldown, tooltip, slider, toolkit */
+
+.global-cooldown {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: saturate(0.3) brightness(0.7);
+}
+
+.global-cooldown::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(var(--vlr-shadow-rgb), 0.4);
+    border-radius: inherit;
+    isolation: isolate;
+}
+/* Shared close button style — used by toolkit X, guide X, and close preview X */
+.vlr-close-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--vlr-control-bg);
+    border: var(--vlr-glass-border);
+    color: var(--vlr-text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    line-height: 1;
+}
+.vlr-close-button:hover {
+    background: var(--vlr-control-bg-hover);
+    box-shadow: var(--vlr-shadow-soft);
+}
+
+.vlr-close-toolkit-icon {
+    color: var(--vlr-text-primary);
+    cursor: pointer;
+}
+
+.vlr-modes-three{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.vlr-modes-wireframe{
+    display: flex;
+    margin: auto;
+    left: 0;
+    right: 0;
+    padding-left: 13px;
+    padding-right: 13px;
+    color: var(--text-color-primary);
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--backdrop-blur-xxl);
+    -webkit-backdrop-filter: var(--backdrop-blur-xxl);
+    border: var(--border-heavy);
+    border-radius: 50px;
+}
+.vlr-center-camera{
+    right: 0;
+    margin-right: 37px;
+}
+.vlr-advanced-op{
+    text-align: center;
+}
+.vlr-hdri-off h1{
+    margin: auto;
+    font-size: 11px;
+}
+.vlr-hdri-off{
+    width: 40px;
+    height: 40px;
+}
+
+.vlr-op-modes{
+    cursor: pointer;
+    position: absolute;
+    text-align: center;
+    display: flex;
+    padding: 14px;
+    padding-right: 15px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    color: var(--text-color-primary);
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--backdrop-blur-xxl);
+    -webkit-backdrop-filter: var(--backdrop-blur-xxl);
+    border: var(--border-heavy);
+    border-radius: 40px;
+}
+.vlr-op-modes-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+
+#vlr-center-camera {
+    right: 0;
+    top: 0;
+}
+
+#vlr-advanced-op {
+    left: 0;
+    top: 0;
+}
+.vlr-op-modes i{
+    font-size: 25px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+.vlr-op-modes:hover{
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover-md);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.vlr-op-modes.active{
+    transform: translateY(-1px) scale(1.04);
+    background: var(--glass-bg-active-tab);
+    border: var(--border-thick);
+    color: var(--text-color-white);
+    box-shadow: var(--shadow-hover-md);
+}
+.vlr-op-modes-container{
+    position: absolute;
+}
+.vlr-op-wireframe{
+    cursor: pointer;
+    opacity: 0.6 !important;
+    padding: 8px;
+    padding-right: 15px;
+    margin-left: 3px;
+    margin-right: 7px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    top: 0;
+    bottom: 0;
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--backdrop-blur-lg);
+    -webkit-backdrop-filter: var(--backdrop-blur-lg);
+    border: var(--border-medium);
+    border-radius: 40px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.vlr-op-wireframe:hover{
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover-sm);
+}
+.vlr-op-wireframe.active{
+    opacity: 1 !important;
+    transform: translateY(-1px) scale(1.1);
+    background: var(--glass-bg-active-tab);
+    backdrop-filter: var(--backdrop-blur-lg);
+    -webkit-backdrop-filter: var(--backdrop-blur-lg);
+    border: var(--border-thick);
+    color: var(--text-color-white);
+}
+.vlr-op-wireframe h4{
+    font-size: 13px;
+    padding-left: 5px;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+}
+.vlr-op-wireframe i{
+    padding: 4px;
+}
+.vlr-modes-three{
+    padding-top: 0px;
+}
+
+/* Visual Toolkit Panel */
+#vlr-visual-toolkit {
+    z-index: 1001;
+    opacity: 0;
+    width: 95%;
+    margin: auto;
+    height: 100%;
+    max-height: fit-content;
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-radius: 50px;
+    padding: 20px;
+    bottom: 10%;
+    transform: scale(1.1);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+    filter: blur(8px);
+    background: var(--vlr-glass-bg);
+    backdrop-filter: var(--vlr-glass-blur);
+    -webkit-backdrop-filter: var(--vlr-glass-blur);
+    overflow: hidden;
+}
+#vlr-visual-toolkit h2{
+    padding-left: 10px;
+}
+#vlr-visual-toolkit.active{
+    pointer-events: all;
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+}
+
+#vlr-visual-toolkit.active.vlr-toolkit-idle-dim {
+    opacity: 0.5 !important;
+}
+
+/* Mesh Inspector / Material Inspector active: fully hidden + unclickable */
+#vlr-visual-toolkit.active.vlr-toolkit-inspector-dim,
+#vlr-visual-toolkit.active.vlr-toolkit-mesh-pending {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+#vlr-visual-toolkit.active.vlr-toolkit-disabled,
+#vlr-visual-toolkit.active.vlr-toolkit-disabled * {
+    cursor: default !important;
+    pointer-events: none !important;
+}
+.vlr-details-toolkit-icon{
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 20px;
+    margin-right: 15px;
+    pointer-events: none;
+    cursor: pointer;
+}
+
+/* Mesh Rotation Slider */
+#meshRotationSlider{
+    width: 100%;
+}
+.input-wrapper {
+    margin: 20px;
+    gap: 10px;
+    position: relative;
+    flex-direction: row;
+    display: flex;
+    margin: 15px 15px;
+    min-width: 300px;
+}
+
+.input-wrapper h5{
+    min-width: 100px;
+}
+
+.input-wrapper input {
+    -webkit-appearance: none;
+    border-radius: 20px;
+    height: 1.8em;
+    outline: none;
+    border: none;
+    z-index: 1;
+    width: 100%;
+}
+
+.input-wrapper input[type="range"]::-moz-range-thumb {
+    -moz-appearance: none;
+    border: 1rem solid var(--text-color-white);
+    background: var(--text-color-white);
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 1;
+    border-radius: 10px;
+}
+
+.input-wrapper input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width:20px;
+    height: 2.5rem;
+    z-index: -1;
+    border-radius: 20px;
+    border: 0.2rem solid var(--text-color-white);
+    background: var(--text-color-white);
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+}
+.input-wrapper input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow:
+        0 6px 16px rgba(var(--vlr-shadow-rgb), 0.2),
+        0 3px 6px rgba(var(--vlr-shadow-rgb), 0.15);
+}
+
+.input-wrapper input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow:
+        0 6px 16px rgba(var(--vlr-shadow-rgb), 0.2),
+        0 3px 6px rgba(var(--vlr-shadow-rgb), 0.15);
+}
+.tooltip {
+    background-color: var(--vlr-control-track);
+    color: var(--text-color-white);
+    border-radius: 20px;
+    text-align: center;
+    font-weight: 600;
+    padding-right: 10px;
+    padding-left: 10px;
+}

@@ -1,0 +1,233 @@
+/* Volare Panels — Performance HUD, model-attr, MeshAnalysis, analysis results */
+
+#vlr-model-attr-data{
+    z-index: 100;
+    position: fixed;
+    display: none;
+    top: 12px;
+    left: 12px;
+    background: var(--glass-bg-dark);
+    isolation: isolate;
+    backdrop-filter: var(--backdrop-blur-hud);
+    -webkit-backdrop-filter: var(--backdrop-blur-hud);
+    color: var(--text-color-primary);
+    padding: 18px;
+    font-size: 15px;
+    border-radius: 20px;
+}
+
+.vlr-model-attr{
+    margin: auto;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    font-size: x-large;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    color: var(--text-color-primary);
+}
+
+.vlr-model-attr-text{
+    white-space: nowrap;
+    opacity: 0;
+    font-size: 0;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    padding-right: 0;
+    color: var(--text-color-secondary);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+}
+
+.vlr-model-attr-main{
+    z-index: 99;
+    position: absolute;
+    right: 0;
+    margin-top: 18px;
+    margin-right: 32px;
+    text-align: center;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+    width: fit-content;
+}
+
+.vlr-model-attr-back{
+    max-width: 64px;
+    white-space: nowrap;
+    overflow: hidden;
+    height: 56px;
+    border-radius: 40px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    margin: 10px;
+    background: var(--vlr-control-bg);
+    isolation: isolate;
+    cursor: pointer;
+    min-width: 64px;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-model-attr-back:hover {
+    max-width: 340px;
+    min-width: 64px;
+    background: var(--glass-bg-active-tab);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-hover-xl);
+}
+
+.vlr-model-attr-back:hover .vlr-model-attr-text{
+    font-size: 14px;
+    padding: 0 18px 0 0;
+    white-space: nowrap;
+    opacity: 1;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-model-attr-back:hover .vlr-model-attr{
+    padding: 0 22px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-model-attr-container{
+    display: flex;
+}
+
+.vlr-model-attr-back-tab{
+    width: 100%;
+    right: 0;
+    text-align: center;
+    border-radius: 40px;
+    display: inline-block;
+    justify-content: space-around;
+    flex-direction: column;
+    background: var(--vlr-glass-bg);
+    backdrop-filter: var(--vlr-glass-blur);
+}
+
+.MeshAnalysis{
+    margin: auto;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    font-size: x-large;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    color: var(--text-color-primary);
+}
+
+.vlr-mesh-analysis-text{
+    white-space: nowrap;
+    opacity: 0;
+    font-size: 0;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    padding-right: 0;
+    color: var(--text-color-secondary);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+}
+
+.vlr-mesh-analysis-main{
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    margin-top: 55px;
+    margin-right: 55px;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    text-align: center;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+.vlr-mesh-analysis-main.active{
+    opacity: 1;
+    pointer-events: all;
+    margin-top: 115px;
+    margin-right: 35px;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-mesh-analysis-back.active{
+    height: 56px;
+    min-width: 64px;
+    margin: 10px;
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--backdrop-blur-lg);
+    -webkit-backdrop-filter: var(--backdrop-blur-lg);
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: var(--shadow-button-base);
+}
+
+.vlr-mesh-analysis-back{
+    white-space: nowrap;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    height: 0;
+    border-radius: 40px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    margin: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.vlr-mesh-analysis-back:hover {
+    max-width: 340px;
+    background: var(--glass-bg-active-tab);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-hover-xl);
+    border-color: var(--border-heavy);
+}
+
+.vlr-mesh-analysis-back:hover .vlr-mesh-analysis-text{
+    font-size: 14px;
+    padding: 0 18px 0 0;
+    white-space: nowrap;
+    opacity: 1;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-mesh-analysis-back:hover .MeshAnalysis{
+    padding: 0 22px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-mesh-analysis-container{
+    display: flex;
+    flex-direction: column;
+}
+
+.vlr-mesh-analysis-back-tab{
+    width: 100%;
+    right: 0;
+    text-align: center;
+    border-radius: 35px;
+    display: inline-block;
+    justify-content: space-around;
+    flex-direction:column;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+}
+
+.vlr-model-options-info{
+    margin-bottom: 10px;
+    margin-right: 20px;
+    padding: 10px;
+    width: auto;
+    background: var(--glass-bg-medium);
+    color: var(--text-color-button);
+    border-radius: 15px;
+    backdrop-filter: var(--backdrop-blur-sm);
+    -webkit-backdrop-filter: var(--backdrop-blur-sm);
+}
+#analysis-results p{
+    padding-top: 5px;
+    padding-left: 10px;
+}
+#analysis-results{
+    padding: 15px;
+}

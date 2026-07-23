@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volare — Minimal Integration Example</title>
+  <!-- The default UI toolkit's buttons use Font Awesome icon classes.
+       Only needed if you keep the default `ui: true` toolkit -- see
+       docs/INTEGRATION_GUIDE.md for a ui:false, icon-free alternative. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha384-/frq1SRXYH/bSyou/HUp/hib7RVN1TawQYja658FEOodR/FQBKVqT9Ol+Oz3Olq5" crossorigin="anonymous">
+  <link rel="stylesheet" href="../../SDK/css/volare.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #111; }
+    #viewer { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+
+  <!-- Volare depends on Three.js. Map it (and the addons/webgpu subpaths it
+       uses internally) via an import map -- swap the CDN URLs for your own
+       bundler resolution of "three" if you have one. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.webgpu.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import { createVolareViewer } from '../../SDK/Core/createVolareViewer.js';
+
+    await createVolareViewer({
+      container: '#viewer',
+      model: '../../DEMO/models/Duck/glTF-Binary/Duck.glb',
+      environment: {
+        hdri: '../../DEMO/models/HDR/studio_small_03_4k.hdr'
+      }
+    });
+  </script>
+</body>
+</html>

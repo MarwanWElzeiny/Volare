@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Volare Demo</title>
+  <link rel="icon" type="image/png" href="./models/VolareTabHeader.png">
+
+  <link rel="stylesheet" href="./styles/navbar.css">
+  <link rel="stylesheet" href="./styles/preview-box.css">
+  <link rel="stylesheet" href="../SDK/css/toast.css">
+  <link rel="stylesheet" href="../SDK/css/popup.css">
+  <link rel="stylesheet" href="../SDK/css/volare.css">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha384-/frq1SRXYH/bSyou/HUp/hib7RVN1TawQYja658FEOodR/FQBKVqT9Ol+Oz3Olq5" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/boxicons/2.1.0/css/boxicons.min.css" integrity="sha384-s21yGSi5hj9pUYJsAyJKoPFLKu082n8/vBfY8iuQ0tBe4wl6wZlFtPyTDKIkAGB+" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css" integrity="sha384-gAPqlBuTCdtVcYt9ocMOYWrnBZ4XSL6q+4eXqwNycOr4iFczhNKtnYhF3NEXJM51" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/iconoir@7.11.1/css/iconoir.css" integrity="sha384-luECWXGw+Rk0LDPKZ8m2vuzYJnGiJfFabF16BAqKVf7rdp1/jvaViZ+BFXFuaD5H" crossorigin="anonymous"/>
+</head>
+
+<body>
+  <nav id="navbar">
+    <div class="nav-container">
+      <div class="nav-links left-links">
+        <ul>
+          <li><a href="#quick-tour">Examples</a></li>
+          <li><a href="#showreel">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="logo">
+        <a href="#"><img src="./models/Volare.png" alt="Volare Logo"></a>
+      </div>
+
+      <div class="nav-links right-links">
+        <ul>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="mobile-toggle" id="menu-toggle">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </div>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <div class="close-btn" id="menu-close">
+        <span class="icon fas fa-times"></span>
+      </div>
+      <ul>
+        <li><a href="#quick-tour">Examples</a></li>
+        <li><a href="#showreel">Documentation</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="toast-overlay" id="toast-overlay"></div>
+  <div id="top-toast" class="top-toast top-toast-hidden">
+    <div class="top-toast-content">
+      <strong id="top-toast-title">Title</strong>
+      <span id="top-toast-message">Message goes here...</span>
+    </div>
+  </div>
+
+  <div class="wrapper-gallery">
+      <h1 class="name-artwork">Simple Models</h1>
+      <div class="gallery" id="gallery">
+        <div class="image thumbnail" alt="Duck Model" data-model="./models/Duck/glTF/Duck.gltf">
+          <span><img src="./models/Duck/screenshot/screenshot.png" alt="Duck Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="Avocado Model" data-model="./models/Avocado/glTF/Avocado.gltf">
+          <span><img src="./models/Avocado/screenshot/screenshot.jpg" alt="Avocado Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="MultiUV Test Model" data-model="./models/MultiUVTest/glTF/MultiUVTest.gltf">
+          <span><img src="./models/MultiUVTest/screenshot/screenshot.jpg" alt="MultiUV Test Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="Brain Stem Model" data-model="./models/BrainStem/glTF/BrainStem.gltf">
+          <span><img src="./models/BrainStem/screenshot/screenshot.gif" alt="Brain Stem Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="Flying Knee Combo (FBX)" data-model="./models/Flying/Model/Flying Knee Punch Combo.fbx">
+          <span><img src="./models/Flying/Thumbnail/Maximo1.png" alt="Maximo FBX Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+      </div>
+  </div>
+
+  <div id="VolareCanvas" class="VolareCanvas"></div>
+
+  <div id="loadingScreen" class="vlr-loading" data-vlr-role="loading" style="display: none;">
+    <div id="spinner"></div>
+    <div class="vlr-loading-details">
+      <div class="loading-text">Loading Model...</div>
+      <div class="loading-container">
+        <div class="loading-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.webgpu.js"
+      }
+    }
+  </script>
+  <script>
+    function setVH() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setVH();
+    setTimeout(setVH, 100);
+    setTimeout(setVH, 300);
+    setTimeout(setVH, 1000);
+    window.addEventListener('resize', () => { setVH(); setTimeout(setVH, 100); });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js" integrity="sha384-2UI1PfnXFjVMQ7/ZDEF70CR943oH3v6uZrFQGGqJYlvhh4g6z6uVktxYbOlAczav" crossorigin="anonymous"></script>
+  <script type="module" src="./scripts/VolareLoad.js"></script>
+  <script type="module" src="./scripts/Navbar.js"></script>
+  <script src="../SDK/UI/LoadingScreen.js"></script>
+</body>
+</html>
