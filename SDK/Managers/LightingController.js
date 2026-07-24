@@ -1,3 +1,4 @@
+import '../Utils/ssrGlobalsShim.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as THREE from 'three';
 import { PMREMGenerator as NodePMREMGenerator } from 'three/webgpu';
@@ -91,6 +92,13 @@ export class LightingManager {
   }
 
   async loadHDRI(hdriPath) {
+    // WebGPURenderer initializes its GPU backend asynchronously; PMREMGenerator
+    // .fromEquirectangular() throws if called before that completes. init() is
+    // idempotent and absent on the classic WebGLRenderer, so this is a no-op
+    // there. Awaiting it here makes HDRI generation safe on both backends.
+    if (this.renderer?.isWebGPURenderer && typeof this.renderer.init === 'function') {
+      await this.renderer.init();
+    }
     return new Promise((resolve, reject) => {
       this.hdrLoader.load(
         hdriPath,

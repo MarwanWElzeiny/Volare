@@ -9,6 +9,23 @@
     -webkit-user-select: none;
 }
 
+/* Container-relative toolkit embed -- used by createVolareViewer() when it
+   generates the toolkit markup inside a consumer-provided container instead
+   of the full-viewport #model overlay the demo builds via VolareCanvas.
+   Purely additive: #model above is untouched, so the demo's full-viewport
+   experience is unaffected. */
+.vlr-embed-container {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.vlr-embed-container #vlr-model-attr-data {
+    position: absolute;
+}
+
 .vlr-model-notice{
     position: absolute;
     left: 0;

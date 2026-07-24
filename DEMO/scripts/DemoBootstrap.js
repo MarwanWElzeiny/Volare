@@ -269,12 +269,11 @@ class VolareInstance {
         });
       }
 
-      // Initialize viewer if container exists
-      const container = document.getElementById('model');
-      if (container) {
-        const viewerPlugin = new VolareViewer();
-        this.viewer = viewerPlugin.createViewer('model', this.config.viewer);
-      }
+      // NOTE: do NOT create the viewer here. In the gallery flow the viewer
+      // (and its HDRI) must not initialize until the user submits the access
+      // form -- initVolare() handles that lazily on submit. Creating it at
+      // gallery-setup time spun up the viewer + HDRI on page load (and a second
+      // time on submit). Only wire the thumbnails now.
 
       // Setup gallery if configured
       if (this.config.gallery?.autoSetup) {
@@ -363,7 +362,7 @@ class VolareInstance {
 
 // Auto-setup function (moved after class definitions)
 function setupAutoGallery() {
-  document.addEventListener('DOMContentLoaded', async () => {
+  const run = async () => {
     const autoGalleries = document.querySelectorAll('[data-volare-auto]');
 
     for (const gallery of autoGalleries) {
@@ -378,7 +377,15 @@ function setupAutoGallery() {
         console.error('Failed to setup auto gallery:', error);
       }
     }
-  });
+  };
+
+  // Module evaluation can finish after DOMContentLoaded already fired, so
+  // check readyState instead of assuming the event is still pending.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run, { once: true });
+  } else {
+    run();
+  }
 }
 
 // Initialize everything

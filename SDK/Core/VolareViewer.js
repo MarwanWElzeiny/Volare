@@ -1,3 +1,4 @@
+import '../Utils/ssrGlobalsShim.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { WebGPURenderer } from 'three/webgpu';
@@ -9,6 +10,7 @@ import { VolareManager } from '../Managers/ModelLoaderManager.js';
 import { MaterialManager } from "../Managers/MaterialController.js";
 import { UIManager } from "../UI/ViewerUIController.js";
 import { ButtonManager } from "../UI/ViewerUIController.js";
+import { getToolkitPanelsHTML, VolareDOMManager, VolareCanvas } from "../UI/ViewerUIController.js";
 import Debouncer from "../Utils/Debouncer.js";
 
 import * as THREE from 'three';
@@ -116,6 +118,7 @@ class VolareViewerInit {
   init() {
     if (this.isInitialized) return;
 
+    this.ensureToolkitMarkup();
     this.initializeThreeJS();
     this.initializeManagers();
     this.setupEventListeners();
@@ -124,6 +127,34 @@ class VolareViewerInit {
 
     this.isInitialized = true;
     this.emit('initialized');
+  }
+
+  // Generates the toolkit HTML (buttons, panels, HDRI switcher) inside
+  // whatever container the consumer gave createVolareViewer(), scoped via
+  // .vlr-embed-container (see viewer.css) instead of the demo's full-viewport
+  // #VolareCanvas overlay. No-op if the container already has toolkit markup
+  // (the legacy VolareCanvas/DemoUIAdapter flow pre-builds it before
+  // VolareViewerInit is ever constructed) or if ui:false was requested.
+  ensureToolkitMarkup() {
+    if (!this.uiEnabled) return;
+    if (this.container.querySelector('.vlr-visual-toolkit')) return;
+
+    this.container.classList.add('vlr-embed-container');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'vlr-toolkit-generated';
+    wrapper.innerHTML = getToolkitPanelsHTML();
+    this.container.appendChild(wrapper);
+    this._generatedToolkitWrapper = wrapper;
+
+    // VolareDOMManager's lookups are global (getElementById/querySelector),
+    // not container-scoped -- refreshing them here lets them find the
+    // elements we just generated. bindEvents() wires the toolkit's open/close
+    // toggle, tab switching, and HDRI swiper drag; autoInit:false skips the
+    // rest of VolareCanvas's own init (which would try to (re)generate HTML
+    // into the demo's #VolareCanvas, not our container).
+    VolareDOMManager.refresh();
+    this._toolkitBinder = new VolareCanvas({ autoInit: false });
+    this._toolkitBinder.bindEvents();
   }
 
   initializeThreeJS() {
@@ -146,6 +177,38 @@ class VolareViewerInit {
     this.renderer = this.createRenderer();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(this.options.pixelRatio);
+    // WebGPURenderer sizes its backing canvas asynchronously: the synchronous
+    // setSize above runs before the GPU backend is initialized and is lost,
+    // leaving the canvas at 0x0 (nothing renders). Re-apply once the backend
+    // is ready. No-op on the classic WebGLRenderer (no .init()).
+    if (this.renderer.isWebGPURenderer && typeof this.renderer.init === 'function') {
+      this.renderer.init().then(() => {
+        if (this.disposed || !this.renderer) return;
+        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        this.renderer.setPixelRatio(this.options.pixelRatio);
+      }).catch(() => {});
+    }
+    // Keep the renderer locked to the container's real size. `window.resize`
+    // alone is not enough: the container can change size without the window
+    // doing so -- shown after being display:none, a parent flex/grid reflow,
+    // a CSS transition, or a host layout panel resizing. Most importantly it
+    // fixes the init race where the viewer is created in the same tick the
+    // container becomes visible, so clientHeight is still 0 and the canvas
+    // would stay 0-height (nothing renders) until the next window resize.
+    if (typeof ResizeObserver === 'function') {
+      this._containerResizeObserver = new ResizeObserver(() => {
+        if (this.disposed || !this.renderer || !this.container) return;
+        const w = this.container.clientWidth;
+        const h = this.container.clientHeight;
+        if (!w || !h) return;
+        const canvas = this.renderer.domElement;
+        // Compare against CSS pixels; the drawing buffer is DPR-scaled.
+        if (canvas.clientWidth === w && canvas.clientHeight === h) return;
+        this.handleWindowResize();
+      });
+      this._containerResizeObserver.observe(this.container);
+    }
+
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = this.options.toneMappingExposure;
@@ -478,7 +541,7 @@ class VolareViewerInit {
         uvWorker: true,
       },
       renderer: {
-        preferredBackend: 'auto'
+        preferredBackend: 'webgl'
       },
       // External selectors
       selectors: {
@@ -1218,6 +1281,8 @@ class VolareViewerInit {
     }
     this.renderLoopActive = false;
     this.cleanupTrackedEventListeners();
+    try { this._containerResizeObserver?.disconnect(); } catch (e) {}
+    this._containerResizeObserver = null;
 
     // 2. Dispose internal managers
     // lightingManager.dispose() handles HDRI env map and PMREMGenerator cleanup.
@@ -1253,6 +1318,18 @@ class VolareViewerInit {
     try {
       const modelContainer = document.getElementById(this.options.selectors.modelContainer);
       if (modelContainer) modelContainer.style.display = 'none';
+    } catch (e) {}
+
+    // 6b. Remove toolkit markup ensureToolkitMarkup() generated (leaves any
+    // pre-existing legacy VolareCanvas markup untouched -- we never built it).
+    try { this._toolkitBinder?.destroy(); } catch (e) {}
+    this._toolkitBinder = null;
+    try {
+      if (this._generatedToolkitWrapper) {
+        this._generatedToolkitWrapper.remove();
+        this._generatedToolkitWrapper = null;
+        this.container?.classList.remove('vlr-embed-container');
+      }
     } catch (e) {}
 
     // 7. Reset core references

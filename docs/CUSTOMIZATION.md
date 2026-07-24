@@ -60,8 +60,8 @@ const viewer = await createVolareViewer({
   },
 
   renderer: {
-    preferredBackend: 'auto', // 'auto' (WebGPU when available, else WebGL), 'webgpu', or 'webgl'
-    pixelRatio: 'auto',       // 'auto' or number
+    preferredBackend: 'webgl', // 'webgl' (default), 'webgpu', or 'auto'
+    pixelRatio: 'auto',        // 'auto' or number
     adaptiveQuality: true
   },
 
@@ -391,10 +391,19 @@ Both approaches override the default tokens without modifying Volare source file
 
 ```js
 renderer: {
-  preferredBackend: 'auto',   // 'auto' uses WebGPU when the device supports it, falling back to WebGL
+  preferredBackend: 'webgl',  // 'webgl' (default), 'webgpu', or 'auto'
   pixelRatio: 'auto',         // 'auto' adapts based on device and model size
   adaptiveQuality: true       // Reduce DPR for huge models
 }
 ```
 
-`preferredBackend: 'webgl'` forces the classic WebGL path even on WebGPU-capable devices. `preferredBackend: 'webgpu'` behaves like `'auto'` but reports a fallback if no WebGPU adapter is found.
+**`'webgl'` (default)** — the classic, broadly-compatible WebGL2 renderer.
+This is the default because the three.js r185 WebGPU backend initializes but
+renders blank on some GPUs/drivers; WebGL2 is the reliable path.
+
+**`'webgpu'`** — opt into the WebGPU backend (falls back to WebGL2 if
+`navigator.gpu`/an adapter is unavailable, recording a `fallback` in the
+renderer diagnostics). Volare's lighting pipeline (ACES Filmic tone mapping,
+PMREM-based HDRI environments) renders identically on both, but verify WebGPU
+on your target devices before shipping it. **`'auto'`** — same behavior as
+`'webgpu'`.

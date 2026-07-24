@@ -282,7 +282,10 @@ function normalizeConfig(config = {}) {
       ...(config.layout || {})
     },
     renderer: {
-      preferredBackend: 'auto',
+      // Default to the proven WebGL backend. WebGPU (r185) initializes but
+      // renders blank on some GPUs/drivers, so it's opt-in via
+      // preferredBackend: 'webgpu' (or 'auto') rather than the default.
+      preferredBackend: 'webgl',
       pixelRatio: 'auto',
       adaptiveQuality: true,
       ...(config.renderer || {})

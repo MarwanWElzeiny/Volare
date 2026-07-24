@@ -193,6 +193,7 @@
 }
 
 body:has(#VolareCanvas.show.is-viewer-ready)::before,
+body:has(#VolareCanvas.show.is-warning)::before,
 body.volare-viewer-open::before {
   content: "";
   position: fixed;

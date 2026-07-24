@@ -19,25 +19,27 @@ npx serve
 
 ## 2. Map Three.js
 
-Volare imports `three`, `three/addons/*`, and `three/webgpu` (used for
-automatic WebGPU detection — see [PERFORMANCE.md](PERFORMANCE.md)). If you
-don't have a bundler that resolves bare specifiers, map all three via an
-import map:
+Volare imports `three`, `three/addons/*`, and `three/webgpu` (it renders on
+WebGL by default; WebGPU is opt-in — see
+[CUSTOMIZATION.md](CUSTOMIZATION.md#renderer)). The `three/webgpu` mapping is
+still required even on the WebGL default, because Volare imports from it at load
+time. If you don't have a bundler that resolves bare specifiers, map all three
+via an import map:
 
 ```html
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
-    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.webgpu.js"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.webgpu.js"
   }
 }
 </script>
 ```
 
 If you use a bundler (Vite, webpack, esbuild) instead, install `three` as a
-real dependency (`npm install three@^0.167.0`) and skip the import map — your
+real dependency (`npm install three@^0.185.0`) and skip the import map — your
 bundler resolves all three specifiers from `node_modules` automatically.
 
 ## 3. Add a container
@@ -66,7 +68,7 @@ Any element works — Volare sizes its canvas to the container's `clientWidth`/
 ```
 
 That's the entire integration. `createVolareViewer()` is the one public entry
-point — it builds the renderer (WebGPU when available, WebGL otherwise; see
+point — it builds the renderer (WebGL by default, WebGPU opt-in; see
 [CUSTOMIZATION.md](CUSTOMIZATION.md#renderer)), the scene, controls, and
 optionally the full glass-morphism toolkit UI.
 

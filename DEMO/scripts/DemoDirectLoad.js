@@ -139,8 +139,19 @@ function initDirect() {
 // Import DemoUIAdapter to get VolareCanvas HTML generation
 import './DemoUIAdapter.js';
 
-// Wait for VolareCanvas to init, then open viewer directly
-document.addEventListener('DOMContentLoaded', () => {
+// Wait for VolareCanvas to init, then open viewer directly.
+// Module scripts can finish evaluating after DOMContentLoaded already fired
+// (e.g. a slow top-level await deep in an import), so check readyState
+// instead of assuming the event hasn't happened yet.
+function onDomReady(callback) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', callback, { once: true });
+  } else {
+    callback();
+  }
+}
+
+onDomReady(() => {
   // DemoUIAdapter auto-creates VolareCanvas on DOMContentLoaded.
   // We use a microtask to run after it.
   queueMicrotask(() => {

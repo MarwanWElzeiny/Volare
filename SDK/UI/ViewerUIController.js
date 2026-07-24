@@ -598,6 +598,234 @@ const VolareDOMManager = {
 };
 
 /**
+ * Toolkit markup builders -- pure functions, no DOM/instance state. Shared by
+ * VolareCanvas (legacy full-viewport demo flow, mounts into #VolareCanvas)
+ * and createVolareViewer() (mounts the same markup into any consumer-given
+ * container -- see VolareViewer.js's ensureToolkitMarkup()).
+ */
+function getModelAttributesHTML() {
+  return `
+    <div class="vlr-model-attr-main">
+      <div class="vlr-model-attr-back-tab">
+        <div class="vlr-model-attr-container">
+          <span class="vlr-model-attr-back vlr-model-attributes vlr-reset-toggle" id="vlr-reset-toggle">
+            <i class="fa-solid fa-arrow-rotate-right vlr-model-attr Lighting"></i>
+            <h4 class="vlr-model-attr-text">Reset All Settings</h4>
+          </span>
+          <span class="vlr-model-attr-back vlr-model-attributes vlr-guide-toggle" id="vlr-guide-toggle">
+            <i class="fa-solid fa-book vlr-model-attr"></i>
+            <h4 class="vlr-model-attr-text">Guide Instructions</h4>
+          </span>
+          <span class="vlr-model-attr-back vlr-model-attributes vlr-toolkit-toggle">
+            <i class="fa-solid fa-toolbox vlr-model-attr"></i>
+            <h4 class="vlr-model-attr-text">Visual Toolkit</h4>
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getMeshAnalysisHTML() {
+  // Eliminated: the legacy "vertex selector" sub-panel (Select Mesh / Hand
+  // Tool floating buttons). The Mesh Inspector toggle itself enables
+  // click-to-inspect directly, so this extra panel was redundant UI.
+  // AnalysisController's handlers for those button IDs are null-safe, so
+  // dropping the markup here cleanly removes the UI without breaking wiring.
+  return '';
+}
+
+function getFeaturePanelHTML() {
+  const features = [
+    { id: 'toggle-bounding-volumes', icon: 'fa-cube', title: 'Bounding Box' },
+    { id: 'toggle-normals', icon: 'fa-arrows-up-down-left-right', title: 'Show Normals' },
+    { id: 'toggle-uv-preview', icon: 'fa-border-all', title: 'UV Layout' },
+    { id: 'toggle-cross-section', icon: 'fa-slash', title: 'Cross Section' },
+    { id: 'toggle-mesh-analysis', icon: 'fa-layer-group', title: 'Mesh Inspector' },
+    { id: 'toggle-performance', icon: 'fa-gauge-high', title: 'Performance Monitor' },
+    { id: 'toggle-director-mode', icon: 'fa-video', title: 'Director Mode' },
+    { id: 'toggle-turntable-plus', icon: 'fa-rotate', title: 'Turntable Mode' },
+    { id: 'toggle-material-inspector', icon: 'fa-fill-drip', title: 'Material Inspector' }
+  ];
+
+  let html = '';
+  for (let i = 0; i < features.length; i += 3) {
+    html += '<div class="vlr-advanced-right-grid">';
+    for (let j = i; j < i + 3 && j < features.length; j++) {
+      const feature = features[j];
+      html += `
+        <div class="vlr-advanced-btn" id="${feature.id}">
+          <i class="fa-solid ${feature.icon}"></i>
+          <h4>${feature.title}</h4>
+        </div>
+      `;
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+function getAdvancedThreeHTML() {
+  return `
+    <div class="vlr-advanced-three" id="vlr-advanced-three">
+      <div class="vlr-analysis-anim-tab">
+        <div class="vlr-advanced-btn tab-button active" data-target="analysis-results">
+          <i class="fa-solid fa-chart-simple"></i>
+          <h4>Model Statistics</h4>
+        </div>
+        <div class="vlr-advanced-btn tab-button" data-target="feature-panel">
+          <i class="fa-solid fa-layer-group"></i>
+          <h4>Features Tab</h4>
+        </div>
+      </div>
+
+      <div id="ui-panel">
+        <div class="vlr-advanced-left">
+          <div class="vlr-model-options-info tab-content active" id="analysis-results">
+            <h4>Model Statistics</h4>
+          </div>
+        </div>
+
+        <div class="vlr-advanced-right vlr-feature-grid tab-content" id="feature-panel" data-vlr-role="feature-grid">
+          ${getFeaturePanelHTML()}
+        </div>
+      </div>
+
+      <div class="input-wrapper">
+        <h5>Mesh Rotation</h5>
+        <input type="range" id="meshRotationSlider" name="min_val" class="range-slide"
+               min="0" max="360" value="0">
+        <div class="tooltip"></div>
+      </div>
+    </div>
+  `;
+}
+
+function getHDRIOptionsHTML() {
+  const hdriOptions = [
+    { path: _hdr('lonely_road_afternoon_puresky_4k.hdr'), image: _hdrImg('lonely_road_afternoon_puresky.jpeg'), title: 'Lonely Road Afternoon', active: true },
+    { path: _hdr('little_paris_eiffel_tower_4k.hdr'), image: _hdrImg('little_paris_eiffel_tower.jpeg'), title: 'Little Paris Eiffel Tower' },
+    { path: _hdr('photo_studio_01_4k.hdr'), image: _hdrImg('photo_studio_01.jpeg'), title: 'Photo Studio 01' },
+    { path: _hdr('venice_sunset_4k.hdr'), image: _hdrImg('venice_sunset.jpeg'), title: 'Venice Sunset' },
+    { path: _hdr('studio_small_03_4k.hdr'), image: _hdrImg('studio_small_03.jpeg'), title: 'Studio Small 03' },
+    { path: _hdr('studio_small_09_4k.hdr'), image: _hdrImg('studio_small_09.jpeg'), title: 'Studio Small 09' },
+    { path: _hdr('kloofendal_48d_partly_cloudy_4k.hdr'), image: _hdrImg('kloofendal_48d_partly_cloudy.jpeg'), title: 'Kloofendal 48d Partly Cloudy' }
+  ];
+
+  return hdriOptions.map(option => `
+    <div class="swiper-slide hdri-option ${option.active ? 'active' : ''}" data-hdri="${option.path}">
+      <img src="${option.image}" alt="${option.title}">
+      <p>${option.title}</p>
+    </div>
+  `).join('');
+}
+
+function getHdriContainerHTML() {
+  return `
+    <div class="vlr-hdri-container vlr-hdri-panel" data-vlr-role="hdri-panel">
+      <div class="vlr-hdri-title">
+        <div class="vlr-hdri-switch-container">
+          <div class="vlr-hdri-info-parent">
+            <p class="vlr-hdri-info">Turn HDRI On and Off</p>
+          </div>
+          <label class="vlr-hdri-switch">
+            <input type="checkbox" id="vlr-hdri-off" class="vlr-hdri-off" checked>
+            <span class="vlr-hdri-slider"></span>
+          </label>
+        </div>
+        <h2>HDRI Options</h2>
+      </div>
+
+      <div class="swiper-container">
+        <div class="swiper-wrapper hdri-selector">
+          ${getHDRIOptionsHTML()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getModesHTML() {
+  return `
+    <div class="vlr-modes-three">
+      <div class="vlr-modes-wireframe vlr-wireframe-bar" data-vlr-role="wireframe-bar">
+        <div class="Wireframe vlr-op-wireframe vlr-mode-button" id="Wireframe">
+          <i class='fa-solid fa-network-wired'></i>
+          <H4>Wireframe</H4>
+        </div>
+        <div class="Original vlr-op-wireframe vlr-mode-button active" id="vlr-original-wire">
+          <i class='fa-solid fa-eye'></i>
+          <h4>Original</h4>
+        </div>
+        <div class="AO vlr-op-wireframe vlr-mode-button" id="vlr-ao-wire">
+          <i class="fa-solid fa-circle-half-stroke"></i>
+          <h4>Ambient Occlusion</h4>
+        </div>
+      </div>
+
+      <div class="vlr-op-modes-container">
+        <div class="vlr-center-camera vlr-op-modes" id="vlr-center-camera">
+          <i class="fa-solid fa-crosshairs"></i>
+          <h4>Follow Model</h4>
+        </div>
+        <div class="vlr-advanced-op vlr-op-modes" id="vlr-advanced-op">
+          <i class="bx bxs-chevron-down"></i>
+          <h4>Advanced Options</h4>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getVisualToolkitHTML() {
+  return `
+    <div class="vlr-visual-toolkit" id="vlr-visual-toolkit">
+      <div class="vlr-details-toolkit-icon">
+        <button class="vlr-close-toolkit-icon vlr-close-button" data-vlr-role="toolkit-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      ${getModesHTML()}
+      ${getAdvancedThreeHTML()}
+      ${getHdriContainerHTML()}
+    </div>
+  `;
+}
+
+function getAnimationsPanelHTML() {
+  return `
+    <div id="animation-panel">
+    </div>
+  `;
+}
+
+/**
+ * The toolkit panels only (model-attr tab, mesh-analysis tab, visual
+ * toolkit, animation panel) -- everything getCanvasHTML() puts *inside*
+ * #model, without the #vlr-model-container/#model wrapper. createVolareViewer()
+ * injects this directly into the consumer's own container, which already
+ * plays the role #model plays for the demo.
+ */
+export function getToolkitPanelsHTML() {
+  return `
+    <div id="vlr-model-attr-data"></div>
+    ${getModelAttributesHTML()}
+    ${getMeshAnalysisHTML()}
+    ${getVisualToolkitHTML()}
+    ${getAnimationsPanelHTML()}
+  `;
+}
+
+function getCanvasHTML() {
+  return `
+    <div id="vlr-model-container" class="vlr-model-container">
+      <div id="model" class="Model vlr-canvas" data-vlr-role="canvas">
+        ${getToolkitPanelsHTML()}
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Enhanced Volare Canvas with integrated UI management
  */
 class VolareCanvas {
@@ -764,23 +992,26 @@ class VolareCanvas {
         this.scheduleVisualToolkitIdleDim(3000);
         break;
       case 'mesh-inspector-open':
+        // Keep the visual toolkit fully transparent + non-interactive for the
+        // whole time the mesh inspector is open (matches the material inspector),
+        // not just while waiting for a mesh selection.
         this.visualToolkitMeshSelected = false;
+        this.setVisualToolkitInspectorDim(true);
         this.setVisualToolkitMeshPending(true);
         break;
       case 'mesh-inspector-close':
+        this.setVisualToolkitInspectorDim(false);
         this.setVisualToolkitMeshPending(false);
+        this.scheduleVisualToolkitIdleDim(3000);
         break;
       case 'mesh-selected':
+        // Mesh chosen: drop the "pending" disable so the inspector panel is
+        // interactive, but stay dimmed via inspector-dim until the inspector closes.
         this.visualToolkitMeshSelected = true;
-        if (this.visualToolkitStatsReady) {
-          this.setVisualToolkitMeshPending(false);
-        }
+        this.setVisualToolkitMeshPending(false);
         break;
       case 'model-stats-ready':
         this.visualToolkitStatsReady = true;
-        if (this.visualToolkitMeshPending && this.visualToolkitMeshSelected) {
-          this.setVisualToolkitMeshPending(false);
-        }
         break;
       default:
         break;
@@ -973,7 +1204,13 @@ class VolareCanvas {
       setTimeout(() => this.initResponsiveTabs(), 100);
     });
 
-    this.addEventListener(window, 'DOMContentLoaded', () => this.initResponsiveTabs());
+    // By the time the viewer UI is constructed, the container already exists
+    // in the DOM, so DOMContentLoaded has virtually always already fired
+    // (module evaluation can also finish after it fires) -- this listener
+    // alone would rarely run. Cover both cases.
+    if (document.readyState === 'loading') {
+      this.addEventListener(window, 'DOMContentLoaded', () => this.initResponsiveTabs());
+    }
 
     this.initializeRangeSlider();
   }
@@ -1014,232 +1251,9 @@ class VolareCanvas {
     const { volareCanvas } = VolareDOMManager;
     if (!volareCanvas) return;
 
-    volareCanvas.innerHTML = this.getCanvasHTML();
+    volareCanvas.innerHTML = getCanvasHTML();
     VolareDOMManager.refresh();
   }
-
-  getCanvasHTML() {
-    return `
-      <div id="vlr-model-container" class="vlr-model-container">
-        <div id="model" class="Model vlr-canvas" data-vlr-role="canvas">
-          <div id="vlr-model-attr-data"></div>
-          ${this.getModelAttributesHTML()}
-          ${this.getMeshAnalysisHTML()}
-          ${this.getVisualToolkitHTML()}
-          ${this.getAnimationsPanelHTML()}
-        </div>
-      </div>
-    `;
-  }
-
-
-  getModelAttributesHTML() {
-    return `
-      <div class="vlr-model-attr-main">
-        <div class="vlr-model-attr-back-tab">
-          <div class="vlr-model-attr-container">
-            <span class="vlr-model-attr-back vlr-model-attributes vlr-reset-toggle" id="vlr-reset-toggle">
-              <i class="fa-solid fa-arrow-rotate-right vlr-model-attr Lighting"></i>
-              <h4 class="vlr-model-attr-text">Reset All Settings</h4>
-            </span>
-            <span class="vlr-model-attr-back vlr-model-attributes vlr-guide-toggle" id="vlr-guide-toggle">
-              <i class="fa-solid fa-book vlr-model-attr"></i>
-              <h4 class="vlr-model-attr-text">Guide Instructions</h4>
-            </span>
-            <span class="vlr-model-attr-back vlr-model-attributes vlr-toolkit-toggle">
-              <i class="fa-solid fa-toolbox vlr-model-attr"></i>
-              <h4 class="vlr-model-attr-text">Visual Toolkit</h4>
-            </span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getMeshAnalysisHTML() {
-    return `
-      <div class="vlr-mesh-analysis-main">
-        <div class="vlr-mesh-analysis-back-tab">
-          <div class="vlr-mesh-analysis-container">
-            <span class="vlr-mesh-analysis-back vlr-select-mesh" id="vlr-select-mesh">
-              <i class="fa-solid fa-crosshairs MeshAnalysis"></i>
-              <h4 class="vlr-mesh-analysis-text">Select Mesh</h4>
-            </span>
-            <span class="vlr-mesh-analysis-back vlr-rotate-around" id="vlr-rotate-around">
-              <i class="fa-solid fa-hand MeshAnalysis"></i>
-              <h4 class="vlr-mesh-analysis-text">Hand Tool</h4>
-            </span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getVisualToolkitHTML() {
-    return `
-      <div class="vlr-visual-toolkit" id="vlr-visual-toolkit">
-        <div class="vlr-details-toolkit-icon">
-          <button class="vlr-close-toolkit-icon vlr-close-button" data-vlr-role="toolkit-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        ${this.getModesHTML()}
-        ${this.getAdvancedThreeHTML()}
-        ${this.getHdriContainerHTML()}
-      </div>
-    `;
-  }
-
-  getAnimationsPanelHTML(){
-    return `
-      <div id="animation-panel">
-      </div>
-    `
-  }
-
-  getModesHTML() {
-    return `
-      <div class="vlr-modes-three">
-        <div class="vlr-modes-wireframe vlr-wireframe-bar" data-vlr-role="wireframe-bar">
-          <div class="Wireframe vlr-op-wireframe vlr-mode-button" id="Wireframe">
-            <i class='fa-solid fa-network-wired'></i>
-            <H4>Wireframe</H4>
-          </div>
-          <div class="Original vlr-op-wireframe vlr-mode-button active" id="vlr-original-wire">
-            <i class='fa-solid fa-eye'></i>
-            <h4>Original</h4>
-          </div>
-          <div class="AO vlr-op-wireframe vlr-mode-button" id="vlr-ao-wire">
-            <i class="fa-solid fa-circle-half-stroke"></i>
-            <h4>Ambient Occlusion</h4>
-          </div>
-        </div>
-
-        <div class="vlr-op-modes-container">
-          <div class="vlr-center-camera vlr-op-modes" id="vlr-center-camera">
-            <i class="fa-solid fa-crosshairs"></i>
-            <h4>Follow Model</h4>
-          </div>
-          <div class="vlr-advanced-op vlr-op-modes" id="vlr-advanced-op">
-            <i class="bx bxs-chevron-down"></i>
-            <h4>Advanced Options</h4>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getAdvancedThreeHTML() {
-    return `
-      <div class="vlr-advanced-three" id="vlr-advanced-three">
-        <div class="vlr-analysis-anim-tab">
-          <div class="vlr-advanced-btn tab-button active" data-target="analysis-results">
-            <i class="fa-solid fa-chart-simple"></i>
-            <h4>Model Statistics</h4>
-          </div>
-          <div class="vlr-advanced-btn tab-button" data-target="feature-panel">
-            <i class="fa-solid fa-layer-group"></i>
-            <h4>Features Tab</h4>
-          </div>
-        </div>
-
-        <div id="ui-panel">
-          <div class="vlr-advanced-left">
-            <div class="vlr-model-options-info tab-content active" id="analysis-results">
-              <h4>Model Statistics</h4>
-            </div>
-          </div>
-
-          <div class="vlr-advanced-right vlr-feature-grid tab-content" id="feature-panel" data-vlr-role="feature-grid">
-            ${this.getFeaturePanelHTML()}
-          </div>
-        </div>
-
-        <div class="input-wrapper">
-          <h5>Mesh Rotation</h5>
-          <input type="range" id="meshRotationSlider" name="min_val" class="range-slide"
-                 min="0" max="360" value="0">
-          <div class="tooltip"></div>
-        </div>
-      </div>
-    `;
-  }
-
-  getFeaturePanelHTML() {
-    const features = [
-      { id: 'toggle-bounding-volumes', icon: 'fa-cube', title: 'Bounding Box' },
-      { id: 'toggle-normals', icon: 'fa-arrows-up-down-left-right', title: 'Show Normals' },
-      { id: 'toggle-uv-preview', icon: 'fa-border-all', title: 'UV Layout' },
-      { id: 'toggle-cross-section', icon: 'fa-slash', title: 'Cross Section' },
-      { id: 'toggle-mesh-analysis', icon: 'fa-layer-group', title: 'Mesh Inspector' },
-      { id: 'toggle-performance', icon: 'fa-gauge-high', title: 'Performance Monitor' },
-      { id: 'toggle-director-mode', icon: 'fa-video', title: 'Director Mode' },
-      { id: 'toggle-turntable-plus', icon: 'fa-rotate', title: 'Turntable Mode' },
-      { id: 'toggle-material-inspector', icon: 'fa-fill-drip', title: 'Material Inspector' }
-    ];
-
-    let html = '';
-    for (let i = 0; i < features.length; i += 3) {
-      html += '<div class="vlr-advanced-right-grid">';
-      for (let j = i; j < i + 3 && j < features.length; j++) {
-        const feature = features[j];
-        html += `
-          <div class="vlr-advanced-btn" id="${feature.id}">
-            <i class="fa-solid ${feature.icon}"></i>
-            <h4>${feature.title}</h4>
-          </div>
-        `;
-      }
-      html += '</div>';
-    }
-    return html;
-  }
-
-  getHdriContainerHTML() {
-    return `
-      <div class="vlr-hdri-container vlr-hdri-panel" data-vlr-role="hdri-panel">
-        <div class="vlr-hdri-title">
-          <div class="vlr-hdri-switch-container">
-            <div class="vlr-hdri-info-parent">
-              <p class="vlr-hdri-info">Turn HDRI On and Off</p>
-            </div>
-            <label class="vlr-hdri-switch">
-              <input type="checkbox" id="vlr-hdri-off" class="vlr-hdri-off" checked>
-              <span class="vlr-hdri-slider"></span>
-            </label>
-          </div>
-          <h2>HDRI Options</h2>
-        </div>
-
-        <div class="swiper-container">
-          <div class="swiper-wrapper hdri-selector">
-            ${this.getHDRIOptionsHTML()}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getHDRIOptionsHTML() {
-    const hdriOptions = [
-      { path: _hdr('lonely_road_afternoon_puresky_4k.hdr'), image: _hdrImg('lonely_road_afternoon_puresky.jpeg'), title: 'Lonely Road Afternoon', active: true },
-      { path: _hdr('little_paris_eiffel_tower_4k.hdr'), image: _hdrImg('little_paris_eiffel_tower.jpeg'), title: 'Little Paris Eiffel Tower' },
-      { path: _hdr('photo_studio_01_4k.hdr'), image: _hdrImg('photo_studio_01.jpeg'), title: 'Photo Studio 01' },
-      { path: _hdr('venice_sunset_4k.hdr'), image: _hdrImg('venice_sunset.jpeg'), title: 'Venice Sunset' },
-      { path: _hdr('studio_small_03_4k.hdr'), image: _hdrImg('studio_small_03.jpeg'), title: 'Studio Small 03' },
-      { path: _hdr('studio_small_09_4k.hdr'), image: _hdrImg('studio_small_09.jpeg'), title: 'Studio Small 09' },
-      { path: _hdr('kloofendal_48d_partly_cloudy_4k.hdr'), image: _hdrImg('kloofendal_48d_partly_cloudy.jpeg'), title: 'Kloofendal 48d Partly Cloudy' }
-    ];
-
-    return hdriOptions.map(option => `
-      <div class="swiper-slide hdri-option ${option.active ? 'active' : ''}" data-hdri="${option.path}">
-        <img src="${option.image}" alt="${option.title}">
-        <p>${option.title}</p>
-      </div>
-    `).join('');
-  }
-
-
-
 
 
 

@@ -5,7 +5,7 @@
   "main": "SDK/Core/createVolareViewer.js",
   "module": "SDK/Core/createVolareViewer.js",
   "peerDependencies": {
-    "three": "^0.167.0"
+    "three": "^0.185.1"
   },
   "sideEffects": false,
   "exports": {
@@ -52,11 +52,11 @@
   "author": "Marwan W. Elzeiny <marwan.waleed.yousry@gmail.com>",
   "license": "Apache-2.0",
   "devDependencies": {
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
-    "helmet": "^7.2.0"
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }

@@ -9,9 +9,9 @@ A premium 3D model viewer SDK built on Three.js. Supports GLB/glTF/FBX/OBJ, plug
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
-    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.webgpu.js"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.webgpu.js"
   }
 }
 </script>

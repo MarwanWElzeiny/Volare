@@ -421,13 +421,21 @@ function bindGuideEvents(instance) {
   });
 }
 
-// Auto-initialize when DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+// Auto-initialize when DOM ready. Module evaluation can finish after
+// DOMContentLoaded already fired, so check readyState instead of assuming
+// the event is still pending.
+function initWhenReady() {
   if (document.getElementById('VolareCanvas')) {
     demoVolareInstance = new VolareCanvas();
     initializeDemoPage(demoVolareInstance);
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initWhenReady, { once: true });
+} else {
+  initWhenReady();
+}
 
 // Window globals for legacy demo compat
 if (typeof window !== 'undefined') {

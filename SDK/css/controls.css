@@ -216,8 +216,26 @@
     transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
 }
 
-#vlr-visual-toolkit.active.vlr-toolkit-idle-dim {
-    opacity: 0.5 !important;
+/* Idle (desktop): slide the panel down so only its top edge peeks above the
+   bottom of the screen -- stops it dominating when unused. Hover/pointer
+   removes the idle-dim class (handled in JS), sliding it back up. The :not()
+   guards let the inspector/mesh "fully hidden" states below still win cleanly.
+   The <=1400px breakpoint in responsive.css disables this peek (phones get the
+   plain bottom sheet -- the slide read as janky there). */
+#vlr-visual-toolkit.active.vlr-toolkit-idle-dim:not(.vlr-toolkit-inspector-dim):not(.vlr-toolkit-mesh-pending) {
+    transform: translateY(calc(100% - 34px));
+    opacity: 0.85;
+}
+
+/* When an animation bar is present at the bottom, the idle toolkit recedes
+   BEHIND it (z-index below the panel's 1002), dimmed and scaled down a bit, so
+   it reads as an intentional "tucked away" state rather than an awkward
+   overlap. Hover/pointer removes idle-dim (JS) and it springs back to full. */
+#vlr-visual-toolkit.active.vlr-toolkit-idle-dim:not(.vlr-toolkit-inspector-dim):not(.vlr-toolkit-mesh-pending):has(~ #animation-panel.vlr-anim-active) {
+    transform: scale(0.9);
+    transform-origin: bottom center;
+    opacity: 0.35;
+    z-index: 1000;
 }
 
 /* Mesh Inspector / Material Inspector active: fully hidden + unclickable */

@@ -15,10 +15,14 @@
 - Lifecycle callbacks (`onReady`, `onModelLoad`, `onModelError`, `onClose`,
   `onDispose`) on `createVolareViewer`
 - `DeveloperMode` config gate; `meshInspector` tool key
-- Real WebGPU rendering via `THREE.WebGPURenderer` (`renderer.preferredBackend:
-  'auto'` by default) — automatically uses the WebGPU backend when the
-  device/browser support it, transparently falls back to WebGL2 otherwise.
-  Force classic WebGL with `preferredBackend: 'webgl'`.
+- Optional WebGPU rendering via `THREE.WebGPURenderer`. WebGL2 is the default
+  (`renderer.preferredBackend: 'webgl'`); the r185 WebGPU backend initializes
+  but renders blank on some GPUs/drivers, so it's opt-in via
+  `preferredBackend: 'webgpu'` (or `'auto'`). Both share Volare's lighting
+  pipeline (ACES tone mapping, PMREM-HDRI environments) identically.
+- Bumped three.js peer dependency to `^0.185.1` (from `^0.167.0`). The earlier
+  version's WebGPU backend rendered HDRI environments too dark and ignored
+  `backgroundBlurriness`; r185 resolves both. Demo import maps updated to match.
 - `examples/minimal/` — a from-scratch integration example with none of the
   demo gallery's branding, alongside a new `docs/INTEGRATION_GUIDE.md`.
 

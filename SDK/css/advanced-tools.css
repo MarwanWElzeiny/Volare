@@ -220,6 +220,14 @@
     }
 }
 
+/* Container-relative override for the embed path (see viewer.css's
+   .vlr-embed-container) -- higher specificity wins over the media-query
+   rule above regardless of viewport width, which is correct since an
+   embedded container's own size, not the host page's breakpoint, matters. */
+.vlr-embed-container .vlr-mesh-info-body {
+    max-height: calc(100% - 160px);
+}
+
 #vlr-advanced-three {
   display: flex;
   flex-direction: column;
@@ -244,7 +252,10 @@
 
 #vlr-advanced-three.active {
   opacity: 1;
-  max-height: 320px;
+  /* Cap relative to viewport so the expanded Stats/Features panel never
+     dominates small screens; scrolls internally past the cap. */
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
   pointer-events: all;
   margin-bottom: 20px;
   transform: translateY(0);

@@ -40,6 +40,15 @@ export const tools = {
   'toggle-material-inspector': true
 };
 
+// Reorders feature-panel buttons in direct.html; empty = keep default order.
+export const toolOrder = [];
+
+// Passed to DemoBootstrap's applyTheme(); null = use the default theme.
+export const theme = null;
+
+// Reserved for direct.html's environment override; unused today.
+export const environment = null;
+
 export function getModelConfig(profileKey) {
   const profile = modelProfiles[profileKey || defaultModel];
   if (!profile) return modelProfiles[defaultModel];
