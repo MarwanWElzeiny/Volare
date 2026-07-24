@@ -143,6 +143,7 @@ See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for theme variables, tool tog
 - [Large Models](docs/LARGE_MODELS.md) — Huge model handling
 - [Protected Assets](docs/PROTECTED_ASSETS.md) — Server-side asset protection
 - [Security Boundary](docs/SECURITY_BOUNDARY.md) — What runs where
+- [Testing](docs/TESTING.md) — Full pre-release test procedure
 - [Security Testing](docs/SECURITY_TESTING.md) — Test suite + manual checks
 - [Security Policy](SECURITY.md) — Threat model, modes, vuln reporting
 - [VLB Format](docs/VLB_FORMAT.md) — Encrypted container spec
