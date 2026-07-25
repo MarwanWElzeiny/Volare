@@ -13,6 +13,30 @@ function exists(relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
 
+// Directories git reports as fully ignored. They cannot reach the published
+// package, so scanning them only produces false positives from local tooling
+// (editor caches, agent/daemon logs, build output). Loose ignored *files* are
+// still walked, so a stray .env is still caught. A force-added file is tracked,
+// so it is not in this set and is still scanned.
+function getIgnoredDirs() {
+  try {
+    const out = execFileSync(
+      'git',
+      ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory'],
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    );
+    return new Set(
+      out.split('\n')
+        .map(line => line.trim().replace(/\/$/, ''))
+        .filter(Boolean)
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+const ignoredDirs = getIgnoredDirs();
+
 function listFiles(dir = root) {
   if (!fs.existsSync(dir)) return [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -22,6 +46,7 @@ function listFiles(dir = root) {
     const relativePath = path.relative(root, fullPath).replace(/\\/g, '/');
     if (entry.isDirectory()) {
       if (['.git', 'node_modules'].includes(entry.name)) continue;
+      if (ignoredDirs.has(relativePath)) continue;
       files.push(...listFiles(fullPath));
     } else {
       files.push(relativePath);
