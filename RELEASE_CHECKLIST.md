@@ -96,7 +96,7 @@ name `volare-viewer` (or your studio slug).
 ## Recommended community files
 
 Deleted in cleanup; GitHub nudges for them. Add back if you want contributors:
-- `LICENSE` — present (Apache 2.0) ✓
+- `LICENSE` — present (MIT) ✓
 - `SECURITY.md` — present ✓
 - `CONTRIBUTING.md` — optional (was removed)
 - `CODE_OF_CONDUCT.md` — optional (was removed)
