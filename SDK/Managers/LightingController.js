@@ -13,15 +13,95 @@ export function getHdriBasePath() { return _hdriBasePath; }
 
 const hdr = (name) => `${_hdriBasePath}${name}`;
 
+// Single source of truth for the HDRI list. The toolkit's HDRI panel renders
+// straight from here, so anything registered shows up in the UI automatically.
+// `file` and `image` resolve against setHdriBasePath(); pass an absolute path
+// or full URL in either field to load from somewhere else entirely.
 export const VOLARE_HDRI_PRESETS = [
-  { id: 'lonely-road-afternoon', label: 'Lonely Road Afternoon', file: 'lonely_road_afternoon_puresky_4k.hdr' },
-  { id: 'little-paris-eiffel-tower', label: 'Little Paris Eiffel Tower', file: 'little_paris_eiffel_tower_4k.hdr' },
-  { id: 'photo-studio-01', label: 'Photo Studio 01', file: 'photo_studio_01_4k.hdr' },
-  { id: 'venice-sunset', label: 'Venice Sunset', file: 'venice_sunset_4k.hdr' },
-  { id: 'studio-small-03', label: 'Studio Small 03', file: 'studio_small_03_4k.hdr' },
-  { id: 'studio-small-09', label: 'Studio Small 09', file: 'studio_small_09_4k.hdr' },
-  { id: 'kloofendal-partly-cloudy', label: 'Kloofendal 48d Partly Cloudy', file: 'kloofendal_48d_partly_cloudy_4k.hdr' }
+  { id: 'lonely-road-afternoon', label: 'Lonely Road Afternoon', file: 'lonely_road_afternoon_puresky_4k.hdr', image: 'lonely_road_afternoon_puresky.jpeg' },
+  { id: 'little-paris-eiffel-tower', label: 'Little Paris Eiffel Tower', file: 'little_paris_eiffel_tower_4k.hdr', image: 'little_paris_eiffel_tower.jpeg' },
+  { id: 'photo-studio-01', label: 'Photo Studio 01', file: 'photo_studio_01_4k.hdr', image: 'photo_studio_01.jpeg' },
+  { id: 'venice-sunset', label: 'Venice Sunset', file: 'venice_sunset_4k.hdr', image: 'venice_sunset.jpeg' },
+  { id: 'studio-small-03', label: 'Studio Small 03', file: 'studio_small_03_4k.hdr', image: 'studio_small_03.jpeg' },
+  { id: 'studio-small-09', label: 'Studio Small 09', file: 'studio_small_09_4k.hdr', image: 'studio_small_09.jpeg' },
+  { id: 'kloofendal-partly-cloudy', label: 'Kloofendal 48d Partly Cloudy', file: 'kloofendal_48d_partly_cloudy_4k.hdr', image: 'kloofendal_48d_partly_cloudy.jpeg' }
 ];
+
+// Presets added at runtime by the integrator. Kept separate from the built-in
+// array so removeHdriPreset() can never delete a shipped preset by accident.
+const customHdriPresets = [];
+
+const isAbsolute = value => /^(https?:)?\/\//.test(value) || value.startsWith('/') || value.startsWith('.');
+
+/** Resolve a preset's HDR file to a loadable URL. */
+export function resolveHdriFile(preset) {
+  const file = preset?.file || '';
+  return isAbsolute(file) ? file : hdr(file);
+}
+
+/** Resolve a preset's thumbnail to a loadable URL. Returns null when unset. */
+export function resolveHdriImage(preset) {
+  const image = preset?.image;
+  if (!image) return null;
+  return isAbsolute(image) ? image : `${_hdriBasePath}images/${image}`;
+}
+
+/**
+ * Register one or more HDRI presets. They appear in the toolkit's HDRI panel
+ * in registration order, after the built-ins. Registering an existing `id`
+ * replaces it, which is how you override a built-in.
+ *
+ * Call before creating the viewer -- the toolkit markup is built during init.
+ *
+ *   registerHdriPresets([
+ *     { id: 'my-studio', label: 'My Studio', file: '/hdr/my_studio_4k.hdr', image: '/hdr/my_studio.jpg' }
+ *   ]);
+ */
+export function registerHdriPresets(presets) {
+  const list = Array.isArray(presets) ? presets : [presets];
+  for (const preset of list) {
+    if (!preset || typeof preset !== 'object') continue;
+    if (!preset.id || !preset.file) {
+      console.warn('[Volare] HDRI preset needs both "id" and "file"; skipped:', preset);
+      continue;
+    }
+    const entry = {
+      id: preset.id,
+      label: preset.label || preset.id,
+      file: preset.file,
+      image: preset.image || null
+    };
+    const builtInIndex = VOLARE_HDRI_PRESETS.findIndex(p => p.id === entry.id);
+    if (builtInIndex !== -1) {
+      VOLARE_HDRI_PRESETS[builtInIndex] = entry;
+      continue;
+    }
+    const customIndex = customHdriPresets.findIndex(p => p.id === entry.id);
+    if (customIndex !== -1) customHdriPresets[customIndex] = entry;
+    else customHdriPresets.push(entry);
+  }
+  return getHdriPresets();
+}
+
+/** Remove a previously registered custom preset. Built-ins are not removable. */
+export function removeHdriPreset(id) {
+  const index = customHdriPresets.findIndex(p => p.id === id);
+  if (index === -1) return false;
+  customHdriPresets.splice(index, 1);
+  return true;
+}
+
+/**
+ * Every preset the UI should show: built-ins plus anything registered, each
+ * with resolved `url` and `imageUrl`.
+ */
+export function getHdriPresets() {
+  return [...VOLARE_HDRI_PRESETS, ...customHdriPresets].map(preset => ({
+    ...preset,
+    url: resolveHdriFile(preset),
+    imageUrl: resolveHdriImage(preset)
+  }));
+}
 
 const DEFAULT_ENVIRONMENT_CONFIG = {
   enabled: true,

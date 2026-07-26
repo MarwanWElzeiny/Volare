@@ -1,7 +1,16 @@
-import { getHdriBasePath } from '../Managers/LightingController.js';
+import { getHdriBasePath, getHdriPresets } from '../Managers/LightingController.js';
 
 const _hdr = (name) => `${getHdriBasePath()}${name}`;
 const _hdrImg = (name) => `${getHdriBasePath()}images/${name}`;
+
+// HDRI labels and paths can now come from integrator-supplied presets, so they
+// are untrusted input as far as this markup is concerned. Escape before
+// interpolating -- the rest of the toolkit HTML is hardcoded and needs none.
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;');
+const escapeAttr = (value) => escapeHtml(value).replace(/"/g, '&quot;');
 
 export const DOM_IDS = {
   TOGGLE_MATERIAL_INSPECTOR: 'toggle-material-inspector',
@@ -702,20 +711,12 @@ function getAdvancedThreeHTML() {
 }
 
 function getHDRIOptionsHTML() {
-  const hdriOptions = [
-    { path: _hdr('lonely_road_afternoon_puresky_4k.hdr'), image: _hdrImg('lonely_road_afternoon_puresky.jpeg'), title: 'Lonely Road Afternoon', active: true },
-    { path: _hdr('little_paris_eiffel_tower_4k.hdr'), image: _hdrImg('little_paris_eiffel_tower.jpeg'), title: 'Little Paris Eiffel Tower' },
-    { path: _hdr('photo_studio_01_4k.hdr'), image: _hdrImg('photo_studio_01.jpeg'), title: 'Photo Studio 01' },
-    { path: _hdr('venice_sunset_4k.hdr'), image: _hdrImg('venice_sunset.jpeg'), title: 'Venice Sunset' },
-    { path: _hdr('studio_small_03_4k.hdr'), image: _hdrImg('studio_small_03.jpeg'), title: 'Studio Small 03' },
-    { path: _hdr('studio_small_09_4k.hdr'), image: _hdrImg('studio_small_09.jpeg'), title: 'Studio Small 09' },
-    { path: _hdr('kloofendal_48d_partly_cloudy_4k.hdr'), image: _hdrImg('kloofendal_48d_partly_cloudy.jpeg'), title: 'Kloofendal 48d Partly Cloudy' }
-  ];
-
-  return hdriOptions.map(option => `
-    <div class="swiper-slide hdri-option ${option.active ? 'active' : ''}" data-hdri="${option.path}">
-      <img src="${option.image}" alt="${option.title}">
-      <p>${option.title}</p>
+  // Rendered from the SDK's preset registry, so anything passed to
+  // registerHdriPresets() (or environment.presets) shows up here automatically.
+  return getHdriPresets().map((preset, index) => `
+    <div class="swiper-slide hdri-option ${index === 0 ? 'active' : ''}" data-hdri="${escapeAttr(preset.url)}">
+      ${preset.imageUrl ? `<img src="${escapeAttr(preset.imageUrl)}" alt="${escapeAttr(preset.label)}">` : ''}
+      <p>${escapeHtml(preset.label)}</p>
     </div>
   `).join('');
 }

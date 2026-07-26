@@ -387,6 +387,68 @@ await createVolareViewer({
 
 Both approaches override the default tokens without modifying Volare source files.
 
+## HDRI Presets
+
+The seven built-in HDRIs are defined in `SDK/Managers/LightingController.js`.
+The toolkit's HDRI panel renders straight from that registry, so adding your
+own makes them appear in the list automatically.
+
+Add them at init:
+
+```js
+await createVolareViewer({
+  container: '#viewer',
+  environment: {
+    presets: [
+      {
+        id: 'my-studio',                    // required, unique
+        label: 'My Studio',                 // shown under the thumbnail
+        file: '/hdr/my_studio_4k.hdr',      // required
+        image: '/hdr/my_studio.jpg'         // optional thumbnail
+      }
+    ]
+  }
+});
+```
+
+Or register them directly, before creating the viewer:
+
+```js
+import { registerHdriPresets } from './SDK/Managers/LightingController.js';
+
+registerHdriPresets([
+  { id: 'my-studio', label: 'My Studio', file: '/hdr/my_studio_4k.hdr' }
+]);
+```
+
+**Timing matters.** The HDRI panel's markup is generated during viewer init, so
+presets registered afterwards will not appear in the list.
+
+`file` and `image` resolve against `setHdriBasePath()` when given as bare
+filenames. Pass a path starting with `/`, `./`, or a full URL to load from
+anywhere else — useful for serving HDRIs from a CDN.
+
+Reusing a built-in `id` replaces that preset in place rather than adding a
+duplicate, which is how you swap out a shipped HDRI:
+
+```js
+registerHdriPresets([
+  { id: 'venice-sunset', label: 'Our Sunset', file: '/hdr/our_sunset_4k.hdr' }
+]);
+```
+
+Related API:
+
+| Function | Purpose |
+|---|---|
+| `registerHdriPresets(presets)` | Add or replace presets. Accepts one or an array. |
+| `getHdriPresets()` | All presets, each with resolved `url` and `imageUrl`. |
+| `removeHdriPreset(id)` | Remove a custom preset. Built-ins are not removable. |
+| `setHdriBasePath(path)` | Base directory for bare filenames. |
+
+A preset missing `id` or `file` is skipped with a console warning rather than
+breaking initialization.
+
 ## Renderer
 
 ```js

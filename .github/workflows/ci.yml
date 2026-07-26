@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - run: npm ci
+
+      # Structure, path casing, and legacy-path checks. Linux is the real test
+      # here -- a case-sensitive filesystem catches casing mistakes that
+      # Windows and macOS silently tolerate.
+      - run: npm run validate
+
+      - run: npm test
+
+      - run: npm run security:audit

@@ -62,6 +62,15 @@ class MockElement {
   }
 }
 
+// Records what the factory forwards from environment.presets. The real
+// implementation lives in LightingController and is covered separately; here we
+// only care that the factory calls it, and that it never throws into init.
+const registeredHdriPresets = [];
+function MockRegisterHdriPresets(presets) {
+  registeredHdriPresets.push(presets);
+  return presets;
+}
+
 class MockPluginManager {
   constructor() {
     this.plugins = [];
@@ -171,16 +180,30 @@ function installDom() {
 }
 
 function loadFactory() {
+  // Every static import in the factory must be stripped here and supplied as an
+  // injected argument below -- the source is evaluated via new Function(), which
+  // cannot parse import statements.
   const source = readFileSync(resolve(root, 'SDK/Core/createVolareViewer.js'), 'utf8')
     .replace(/import \{ VolarePluginManager \} from '\.\/PluginHost\.js';\r?\n/, '')
     .replace(/import \{ VolareViewerInit \} from '\.\/VolareViewer\.js';\r?\n/, '')
+    .replace(/import \{ registerHdriPresets \} from '\.\.\/Managers\/LightingController\.js';\r?\n/, '')
     .replace("export async function createVolareViewer", 'async function createVolareViewer')
     .replace("export function getVolareViewers", 'function getVolareViewers');
+
+  const leftoverImport = source.match(/^\s*import\s.+$/m);
+  if (leftoverImport) {
+    throw new Error(
+      `loadFactory: unstripped import in createVolareViewer.js -> ${leftoverImport[0].trim()}\n` +
+      'Add a .replace() for it above and inject a mock argument.'
+    );
+  }
+
   return new Function(
     'VolarePluginManager',
     'VolareViewerInit',
+    'registerHdriPresets',
     `${source}\nreturn { createVolareViewer, getVolareViewers };`
-  )(MockPluginManager, MockVolareViewerInit);
+  )(MockPluginManager, MockVolareViewerInit, MockRegisterHdriPresets);
 }
 
 async function flushMicrotasks() {
@@ -464,6 +487,30 @@ await test('existing demo config objects remain accepted', async () => {
 await test('SDK entry point exports createVolareViewer', async () => {
   const sdkEntry = readFileSync(resolve(root, 'SDK/Core/createVolareViewer.js'), 'utf8');
   assert.match(sdkEntry, /createVolareViewer/);
+});
+
+await test('environment.presets are registered before the viewer is built', async () => {
+  const dom = installDom();
+  dom.add('viewer');
+  registeredHdriPresets.length = 0;
+  const { createVolareViewer } = loadFactory();
+  const presets = [{ id: 'custom-studio', label: 'Custom Studio', file: '/hdr/custom_4k.hdr' }];
+
+  await createVolareViewer({ container: '#viewer', environment: { presets } });
+
+  assert.equal(registeredHdriPresets.length, 1, 'registerHdriPresets should be called once');
+  assert.deepEqual(registeredHdriPresets[0], presets);
+});
+
+await test('omitting environment.presets does not call the HDRI registry', async () => {
+  const dom = installDom();
+  dom.add('viewer');
+  registeredHdriPresets.length = 0;
+  const { createVolareViewer } = loadFactory();
+
+  await createVolareViewer({ container: '#viewer' });
+
+  assert.equal(registeredHdriPresets.length, 0);
 });
 
 console.log(`\n${'-'.repeat(50)}`);

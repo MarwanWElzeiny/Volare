@@ -1,5 +1,6 @@
 import { VolarePluginManager } from './PluginHost.js';
 import { VolareViewerInit } from './VolareViewer.js';
+import { registerHdriPresets } from '../Managers/LightingController.js';
 
 const viewerRegistry = new Set();
 const LIFECYCLE_CALLBACKS = ['onReady', 'onModelLoad', 'onModelError', 'onClose', 'onDispose'];
@@ -805,6 +806,14 @@ export async function createVolareViewer(userConfig = {}) {
     }
 
     config.plugins.forEach(plugin => pluginManager.register(plugin));
+
+    // Register custom HDRIs before the viewer is constructed -- the toolkit's
+    // HDRI panel markup is generated during init, so later registration would
+    // not appear in the list.
+    if (Array.isArray(config.environment?.presets) && config.environment.presets.length) {
+      registerHdriPresets(config.environment.presets);
+    }
+
     await pluginManager.run('beforeInit', sdk);
     sdk.viewer = new VolareViewerInit(container, {
       ...config.viewer,
