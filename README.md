@@ -3,7 +3,7 @@
 A buildless 3D model viewer for the web. Load a model, inspect it, theme it — no bundler, no server.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/YOUR-GITHUB-USERNAME/volare/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-GITHUB-USERNAME/volare/actions/workflows/ci.yml)
+[![CI](https://github.com/MarwanWElzeiny/Volare/actions/workflows/ci.yml/badge.svg)](https://github.com/MarwanWElzeiny/Volare/actions/workflows/ci.yml)
 [![three.js](https://img.shields.io/badge/three.js-r185-black.svg)](https://threejs.org/)
 
 <!--
@@ -18,7 +18,7 @@ the capture page and settings. Then delete this comment.
 Not on npm yet. Clone the repo, or copy `SDK/` into your project:
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/volare.git
+git clone https://github.com/MarwanWElzeiny/Volare.git
 ```
 
 Three.js is a peer dependency (`^0.185.1`) — load it from a CDN via import map,

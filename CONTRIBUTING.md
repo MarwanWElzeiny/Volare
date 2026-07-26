@@ -11,8 +11,8 @@ have to turn down.
 ## Getting set up
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/volare.git
-cd volare
+git clone https://github.com/MarwanWElzeiny/Volare.git
+cd Volare
 npm install
 npm start
 ```

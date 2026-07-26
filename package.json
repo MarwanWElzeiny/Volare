@@ -19,13 +19,13 @@
     "pbr",
     "esm"
   ],
-  "homepage": "https://github.com/YOUR-GITHUB-USERNAME/volare#readme",
+  "homepage": "https://github.com/MarwanWElzeiny/Volare#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR-GITHUB-USERNAME/volare.git"
+    "url": "git+https://github.com/MarwanWElzeiny/Volare.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR-GITHUB-USERNAME/volare/issues"
+    "url": "https://github.com/MarwanWElzeiny/Volare/issues"
   },
   "license": "MIT",
   "author": "Marwan W. Elzeiny <marwan.waleed.yousry@gmail.com>",
