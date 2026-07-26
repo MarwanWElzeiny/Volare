@@ -1,11 +1,44 @@
 # Volare
 
-A premium 3D model viewer SDK built on Three.js. Supports GLB/glTF/FBX/OBJ, plugin architecture, customizable UI. No server required.
+A buildless 3D model viewer for the web. Load a model, inspect it, theme it — no bundler, no server.
 
-## Quick Start
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/YOUR-GITHUB-USERNAME/volare/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-GITHUB-USERNAME/volare/actions/workflows/ci.yml)
+[![three.js](https://img.shields.io/badge/three.js-r185-black.svg)](https://threejs.org/)
+
+<!--
+TODO: record and drop in ./media/hero.gif — a silent, looping clip of the
+orbit + cross-section interaction, no text overlay. See media/README.md for
+the capture page and settings. Then delete this comment.
+-->
+<img src="./media/hero.gif" alt="Volare viewer demo">
+
+## Install
+
+Not on npm yet. Clone the repo, or copy `SDK/` into your project:
+
+```bash
+git clone https://github.com/YOUR-GITHUB-USERNAME/volare.git
+```
+
+Three.js is a peer dependency (`^0.185.1`) — load it from a CDN via import map,
+or install it if you use a bundler.
+
+## Demo
+
+```bash
+npm install && npm start
+```
+
+<!-- TODO: add a hosted demo link (GitHub Pages / StackBlitz) once deployed. -->
+
+## Quickstart
+
+The complete contents of [`examples/minimal`](examples/minimal/index.html):
 
 ```html
-<!-- 1. Three.js import map -->
+<div id="viewer" style="width: 100%; height: 100vh;"></div>
+
 <script type="importmap">
 {
   "imports": {
@@ -16,10 +49,6 @@ A premium 3D model viewer SDK built on Three.js. Supports GLB/glTF/FBX/OBJ, plug
 }
 </script>
 
-<!-- 2. Container -->
-<div id="viewer" style="width: 100%; height: 100vh;"></div>
-
-<!-- 3. Init -->
 <script type="module">
   import { createVolareViewer } from './SDK/Core/createVolareViewer.js';
 
@@ -30,132 +59,45 @@ A premium 3D model viewer SDK built on Three.js. Supports GLB/glTF/FBX/OBJ, plug
 </script>
 ```
 
-See [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) and
-[`examples/minimal/index.html`](examples/minimal/index.html) for a complete,
-dependency-free working copy — no gallery, no navbar, no demo branding.
-
-## Project Structure
-
-```
-SDK/             CSS + JS source — copy this into your website
-DEMO/            Full working demo (gallery, direct viewer, portfolio)
-server/          Optional Node.js server (for protected asset delivery)
-security/        Server-side security module
-tools/           VLB encryption tools, validation, security audit
-tests/           Security + lifecycle tests
-docs/            Feature docs, customization, formats, plugins
-```
-
-## How to Use in Your Website
-
-1. Copy `SDK/` into your project
-2. Copy HDR files from `DEMO/models/HDR/` (or use your own)
-3. Add to your HTML:
-   - `<link rel="stylesheet" href="path/to/SDK/css/volare.css">`
-   - Icon libraries (Font Awesome, Boxicons — see `DEMO/direct.html` for links)
-   - Three.js import map
-4. In your JS:
-   ```js
-   import { setHdriBasePath } from './SDK/Managers/LightingController.js';
-   setHdriBasePath('./path/to/your/HDR/');
-   ```
-5. Init viewer (see Quick Start above)
-
-**Requirements**: Any web server (even `python -m http.server`). No Node.js needed. ES modules require serving over HTTP, not `file://`.
-
-## Headless (No UI)
-
-```js
-import { createVolareViewer } from './SDK/Core/createVolareViewer.js';
-import { setHdriBasePath } from './SDK/Managers/LightingController.js';
-
-setHdriBasePath('./HDR/');
-
-const viewer = await createVolareViewer({
-  container: '#viewer',
-  model: './models/car.glb',
-  ui: false
-});
-```
-
-## Supported Formats
-
-| Format | Extensions | Notes |
-|--------|-----------|-------|
-| glTF 2.0 | `.glb`, `.gltf` | Recommended |
-| VLB | `.vlb`, `.vmesh` | Volare encrypted container |
-| FBX | `.fbx` | Lazy-loaded |
-| OBJ | `.obj` | Lazy-loaded |
+Serve over HTTP — ES modules do not load from `file://`.
 
 ## Features
 
-- 9 analysis tools (Material Inspector, Bounding Volumes, Normals, Cross Section, UV Preview, Mesh Inspector, Director Mode, Turntable, Performance Monitor)
-- 7 HDRI environment presets + custom HDR support
-- Animation playback controls
-- Glass-morphism UI with CSS token theming
-- Plugin architecture
-- Large model auto-detection
-- Mobile-responsive with touch controls
-- Protected asset delivery (optional, requires Node.js server)
+- **Formats** — GLB, glTF, and VLB built in; FBX and OBJ lazy-loaded on first use
+- **Inspection toolkit** — wireframe, ambient occlusion, cross-section, UV layout, bounding volumes, normals, mesh inspector, performance monitor, director mode, turntable
+- **HDRI lighting** — 7 presets, extensible with your own
+- **Animation playback** — clip controls for rigged models
+- **Theming** — ~90 CSS custom properties; no stylesheet forking
+- **Plugins** — lifecycle hooks around init, model load, and environment changes
+- **Renderer** — WebGL by default, WebGPU opt-in
+- **Adaptive quality** — pixel ratio scales to device and model size
+- **Optional protected delivery** — signed, chunked asset serving (requires the included Node server)
 
-## Running the Demo
+## Why Volare
 
-```bash
-# Option A: Any static server
-cd volare-public-release
-python -m http.server 8000
-# Open http://localhost:8000/DEMO/index.html
+Most viewers make you choose between a black-box `<model-viewer>` element and
+building on raw Three.js yourself. Volare sits in between: a working inspection
+UI you can actually restyle, driven entirely by CSS custom properties rather
+than forked stylesheets.
 
-# Option B: Node.js server (enables protected asset features)
-npm install
-npm start
-# Open http://localhost:3000
-```
+It has no build step — raw ES modules that load straight in the browser — and
+the toolkit mounts into any container, so it embeds in a panel as readily as it
+fills a page.
 
-## Testing
+## Documentation
 
-```bash
-npm test               # Security envelope tests + SDK lifecycle tests
-npm run security:audit # Static security audit (config, secrets, exposure)
-npm run validate       # Structural validation (paths, legacy cleanup)
-```
+- [Integration guide](docs/INTEGRATION_GUIDE.md) — mount it from scratch
+- [Customization](docs/CUSTOMIZATION.md) — config, theming, HDRI presets, renderer
+- [Formats](docs/FORMATS.md) · [Plugins](docs/PLUGINS.md) · [Performance](docs/PERFORMANCE.md)
+- [Testing](docs/TESTING.md) — the pre-release procedure
+- [Security](SECURITY.md) — threat model and protected delivery
 
-`npm test` covers signed-manifest verification, SHA-256 asset hashing, JWT
-license validation and expiry, nonce replay prevention, origin checks,
-protected/chunked delivery routes, and rate limiting. Full breakdown +
-manual `curl` checks: [docs/SECURITY_TESTING.md](docs/SECURITY_TESTING.md).
+Full index in [`docs/`](docs/).
 
-Security model (what runs where, trust boundaries):
-[docs/SECURITY_BOUNDARY.md](docs/SECURITY_BOUNDARY.md).
+## Contributing
 
-## Customization
-
-See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for theme variables, tool toggles, and config reference.
-
-## Docs
-
-- [Integration Guide](docs/INTEGRATION_GUIDE.md) — Mount Volare from scratch, no demo baggage
-- [Customization](docs/CUSTOMIZATION.md) — Config reference (theme, tools, renderer, plugins)
-- [Features](docs/FEATURES.md) — Full feature list
-- [Formats](docs/FORMATS.md) — Model format details
-- [Plugins](docs/PLUGINS.md) — Plugin API
-- [Performance](docs/PERFORMANCE.md) — Performance tuning
-- [Large Models](docs/LARGE_MODELS.md) — Huge model handling
-- [Protected Assets](docs/PROTECTED_ASSETS.md) — Server-side asset protection
-- [Security Boundary](docs/SECURITY_BOUNDARY.md) — What runs where
-- [Testing](docs/TESTING.md) — Full pre-release test procedure
-- [Security Testing](docs/SECURITY_TESTING.md) — Test suite + manual checks
-- [Security Policy](SECURITY.md) — Threat model, modes, vuln reporting
-- [VLB Format](docs/VLB_FORMAT.md) — Encrypted container spec
-
-## Browser Support
-
-Chrome 90+, Firefox 90+, Safari 15+, Edge 90+, Mobile Chrome, Mobile Safari. Requires WebGL 1.0+ (2.0 recommended).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Open an issue before large changes.
 
 ## License
 
-[MIT](LICENSE)
-
-### Demo Assets
-
-Demo models in `DEMO/models/` are from the Khronos glTF Sample Assets repository (individual licenses). HDR maps are from Poly Haven (CC0).
+[MIT](LICENSE) © Marwan W. Elzeiny

@@ -1,12 +1,36 @@
 {
   "name": "volare",
   "version": "0.1.0-beta.0",
-  "description": "Volare — a premium 3D model viewer built on Three.js. Supports GLB/glTF/FBX/OBJ, plugin architecture, and customizable UI. No server required.",
+  "description": "A buildless 3D model viewer for the web. Loads GLB/glTF/FBX/OBJ, ships an inspection toolkit (wireframe, cross-section, UV, mesh stats), HDRI lighting, and CSS-token theming.",
+  "keywords": [
+    "3d-viewer",
+    "threejs",
+    "three",
+    "gltf",
+    "glb",
+    "fbx",
+    "obj",
+    "webgl",
+    "webgpu",
+    "model-viewer",
+    "3d",
+    "viewer",
+    "hdri",
+    "pbr",
+    "esm"
+  ],
+  "homepage": "https://github.com/YOUR-GITHUB-USERNAME/volare#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR-GITHUB-USERNAME/volare.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR-GITHUB-USERNAME/volare/issues"
+  },
+  "license": "MIT",
+  "author": "Marwan W. Elzeiny <marwan.waleed.yousry@gmail.com>",
   "main": "SDK/Core/createVolareViewer.js",
   "module": "SDK/Core/createVolareViewer.js",
-  "peerDependencies": {
-    "three": "^0.185.1"
-  },
   "sideEffects": false,
   "exports": {
     ".": "./SDK/Core/createVolareViewer.js",
@@ -36,21 +60,9 @@
     "test": "npm run test:security && node tests/lifecycle-callbacks.test.mjs",
     "start": "node server/app.js"
   },
-  "keywords": [
-    "3d-viewer",
-    "threejs",
-    "gltf",
-    "glb",
-    "fbx",
-    "obj",
-    "webgl",
-    "model-viewer",
-    "sdk",
-    "3d",
-    "viewer"
-  ],
-  "author": "Marwan W. Elzeiny <marwan.waleed.yousry@gmail.com>",
-  "license": "Apache-2.0",
+  "peerDependencies": {
+    "three": "^0.185.1"
+  },
   "devDependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
