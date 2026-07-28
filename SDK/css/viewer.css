@@ -1,0 +1,213 @@
+/* Volare Viewer — Model container, notice card, watermark, warnings */
+
+#model{
+    z-index: 9999999;
+    display: block;
+    margin: auto;
+    height: calc(var(--vh, 1vh) * 100);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Container-relative toolkit embed -- used by createVolareViewer() when it
+   generates the toolkit markup inside a consumer-provided container instead
+   of the full-viewport #model overlay the demo builds via VolareCanvas.
+   Purely additive: #model above is untouched, so the demo's full-viewport
+   experience is unaffected. */
+.vlr-embed-container {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.vlr-embed-container #vlr-model-attr-data {
+    position: absolute;
+}
+
+.vlr-model-notice{
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    resize: none;
+    overflow: hidden;
+}
+.vlr-model-notice,
+.vlr-model-attr-back,
+.vlr-mesh-analysis-back {
+    overflow: hidden;
+}
+#model-access-form.notice-card {
+    display: block;
+    width: min(90vw, 900px);
+    margin: 10vh auto;
+    padding: 1rem 2rem 3.5rem;
+    backdrop-filter: var(--backdrop-blur-model-notice);
+    -webkit-backdrop-filter: var(--backdrop-blur-model-notice);
+    background:
+        linear-gradient(135deg,
+            rgba(var(--vlr-surface-rgb), 0.12) 0%,
+            rgba(var(--vlr-surface-rgb), 0.06) 25%,
+            rgba(var(--vlr-surface-rgb), 0.04) 50%,
+            rgba(var(--vlr-surface-rgb), 0.02) 100%);
+    border: var(--border-thick);
+    color: var(--text-color);
+    border-radius: 28px;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+}
+#model-access-form.notice-card::before {
+    content: "";
+    position: absolute;
+    top: -60%;
+    right: -60%;
+    width: 120%;
+    height: 120%;
+    background: var(--vlr-ambient-glow);
+    transform: rotate(30deg);
+    filter: blur(100px);
+    pointer-events: none;
+    opacity: 0.8;
+}
+#model-access-form.notice-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(135deg,
+            rgba(var(--vlr-surface-rgb), 0.02) 0%,
+            transparent 50%,
+            rgba(var(--vlr-shadow-rgb), 0.02) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+}
+.vlr-watermark-parent{
+    position: fixed;
+    top: 40px;
+    right: 30px;
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+}
+.vlr-watermark{
+    width: 130px;
+    height: auto;
+    max-width: 18vw;
+}
+
+.vlr-model-warning-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+    margin-top: 1.25rem;
+    color: var(--text-color-primary);
+}
+
+.vlr-model-warning-paragraph,
+.vlr-model-warning-paragraph-info{
+    padding-left: 12px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-color-tertiary);
+    font-weight: 450;
+    letter-spacing: -0.01em;
+}
+
+.vlr-model-warning-paragraph-info{
+    padding-left: 60px;
+}
+
+.vlr-model-warning-paragraph i {
+    margin-bottom: 6px;
+    margin-right: 0.5rem;
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    isolation: isolate;
+    color: var(--text-color-secondary);
+    padding: 10px;
+    border-radius: 14px;
+    border: var(--border-light);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: var(--shadow-sm);
+}
+
+.vlr-model-warning-paragraph i:hover {
+    background: var(--glass-bg-hover-light);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: var(--shadow-hover-md);
+    border-color: var(--border-heavy);
+}
+
+.more-info {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--backdrop-blur-xl);
+    -webkit-backdrop-filter: var(--backdrop-blur-xl);
+    isolation: isolate;
+    border: var(--border-medium);
+    border-radius: 28px;
+    padding: 14px 52px;
+    width: max-content;
+    text-align: center;
+    margin: 0.75rem auto 2rem;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+}
+
+.more-info:hover {
+    background: var(--glass-bg-hover-light);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-hover-lg);
+    border-color: var(--border-heavy);
+}
+
+.cf-turnstile {
+    margin: 0 auto 2rem;
+    transform: translateX(0);
+}
+
+#ViewModel.submit-btn {
+    display: block;
+    width: 100%;
+    padding: 18px 0;
+    background: var(--glass-bg-submit-btn);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    isolation: isolate;
+    color: var(--text-color-black);
+    border: var(--border-submit-btn);
+    border-radius: 18px;
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: var(--shadow-submit-btn);
+}
+
+#ViewModel.submit-btn:hover {
+    transform: translateY(-3px) scale(1.01);
+}
+
+#ViewModel.submit-btn:active {
+    transform: translateY(-1px) scale(0.99);
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 8px 24px rgba(var(--vlr-shadow-rgb), 0.15), inset 0 2px 0 rgba(var(--vlr-surface-rgb), 0.2);
+}

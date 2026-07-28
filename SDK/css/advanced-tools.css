@@ -1,0 +1,308 @@
+/* Volare Advanced Tools — #vlr-advanced-three, vlr-advanced-btn, tabs, tool grid */
+
+.vlr-analysis-anim-tab{
+    display: none;
+}
+
+.tab-content {
+    display: block !important;
+}
+
+#ui-panel {
+    padding-left: 10px;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+}
+
+.vlr-advanced-left {
+    display: flex;
+    flex-direction: row;
+    max-width: fit-content;
+}
+.vlr-advanced-right {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.vlr-advanced-right-grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 5px;
+    flex: 1;
+}
+
+.vlr-advanced-btn{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 120px;
+    gap: 0.35rem;
+    text-align: center;
+    padding: 0.9rem 2rem;
+    background: var(--glass-bg-medium);
+    color: var(--text-color-button);
+    border-radius: 1.5rem;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.tab-button{
+    margin-top: 12px;
+}
+
+.vlr-advanced-btn.active,
+.tab-button.active{
+    border: 1px solid rgba(var(--vlr-surface-rgb), 0.25);
+    box-shadow: 0 0 0 2px rgba(var(--vlr-surface-rgb), 0.3), inset 0 0 20px rgba(var(--vlr-surface-rgb), 0.2);
+    background: var(--vlr-control-bg-active);
+    transition: all 0.2s ease-out;
+}
+
+.vlr-advanced-btn i {
+    font-size: 25px;
+    margin: 0;
+    text-align: center;
+}
+
+.vlr-advanced-btn h4 {
+    height: 12px;
+    font-size: 0px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+    padding-left: 0px;
+}
+
+.vlr-advanced-btn {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: translateY(0);
+}
+
+.vlr-advanced-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover-md);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vlr-advanced-btn:hover h4 {
+    opacity: 1;
+    font-size: 11px;
+    align-items: center;
+    padding-left: 6px;
+    margin: 0;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Mesh Part Inspector info panel — centered in viewer */
+.vlr-mesh-info-panel {
+    position: absolute;
+    bottom: -55px;
+    left: 50%;
+    z-index: 9999;
+    background: var(--glass-bg-dark, linear-gradient(135deg, rgba(var(--vlr-surface-dark-rgb), 0.90), rgba(var(--vlr-surface-dark-rgb), 0.80)));
+    backdrop-filter: var(--backdrop-blur-md, blur(20px) saturate(150%));
+    -webkit-backdrop-filter: var(--backdrop-blur-md, blur(20px) saturate(150%));
+    border: var(--vlr-glass-border, 1px solid rgba(var(--vlr-surface-rgb), 0.12));
+    border-radius: 16px;
+    min-width: 220px;
+    max-width: 400px;
+    color: rgb(var(--vlr-surface-rgb));
+    box-shadow: var(--vlr-shadow-soft, 0 20px 40px rgba(var(--vlr-shadow-rgb), 0.55));
+    overflow: hidden;
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px));
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vlr-mesh-info-panel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+}
+.vlr-mesh-info-panel.hide {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px));
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vlr-mesh-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(var(--vlr-surface-rgb), 0.08);
+}
+.vlr-mesh-info-title {
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.vlr-mesh-info-close {
+    background: rgba(var(--vlr-surface-rgb), 0.07);
+    border: none;
+    color: rgb(var(--vlr-surface-rgb));
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+    padding: 0;
+}
+.vlr-mesh-info-close:hover {
+    background: rgba(var(--vlr-surface-rgb), 0.16);
+}
+.vlr-mesh-info-body {
+    padding: 10px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.vlr-mesh-info-row {
+    display: grid;
+    grid-template-columns: minmax(90px, max-content) minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+}
+.vlr-mesh-info-label {
+    color: rgba(var(--vlr-surface-rgb), 0.48);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.vlr-mesh-info-value {
+    color: rgba(var(--vlr-surface-rgb), 0.90);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+    .vlr-mesh-info-panel {
+        top: auto;
+        bottom: 72px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        min-width: 0;
+        transform: translateY(10px);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: linear-gradient(135deg, rgba(var(--vlr-surface-dark-rgb), 0.95), rgba(var(--vlr-surface-dark-rgb), 0.90));
+    }
+    .vlr-mesh-info-panel.show {
+        transform: translateY(0);
+    }
+    .vlr-mesh-info-panel.hide {
+        transform: translateY(10px);
+    }
+    .vlr-mesh-info-body {
+        max-height: calc(100vh - 160px);
+    }
+}
+
+/* Container-relative override for the embed path (see viewer.css's
+   .vlr-embed-container) -- higher specificity wins over the media-query
+   rule above regardless of viewport width, which is correct since an
+   embedded container's own size, not the host page's breakpoint, matters. */
+.vlr-embed-container .vlr-mesh-info-body {
+    max-height: calc(100% - 160px);
+}
+
+#vlr-advanced-three {
+  display: flex;
+  flex-direction: column;
+  margin-top: 25px;
+  margin-bottom: 0;
+  opacity: 0;
+  cursor: default;
+  pointer-events: none;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(-10px);
+  transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.3s ease-out,
+              transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              margin-bottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#vlr-advanced-three::-webkit-scrollbar {
+  display: none;
+}
+
+#vlr-advanced-three.active {
+  opacity: 1;
+  /* Cap relative to viewport so the expanded Stats/Features panel never
+     dominates small screens; scrolls internally past the cap. */
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
+  pointer-events: all;
+  margin-bottom: 20px;
+  transform: translateY(0);
+  transition: max-height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.4s ease-out 0.1s,
+              transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s,
+              margin-bottom 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#vlr-advanced-three.active .vlr-advanced-right-grid:nth-child(1) .vlr-advanced-btn {
+    animation: slideInUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both;
+}
+
+#vlr-advanced-three.active .vlr-advanced-right-grid:nth-child(2) .vlr-advanced-btn {
+    animation: slideInUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+}
+
+#vlr-advanced-three.active .vlr-advanced-right-grid:nth-child(3) .vlr-advanced-btn {
+    animation: slideInUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.4s both;
+}
+
+#vlr-advanced-three.active .input-wrapper {
+    animation: slideInUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s both;
+}
+
+#vlr-advanced-three.active .vlr-advanced-left {
+    animation: slideInLeft 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

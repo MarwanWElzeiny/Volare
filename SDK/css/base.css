@@ -1,0 +1,46 @@
+/* Volare Base — Reset, html, body, scrollbar */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: rgb(var(--vlr-shadow-rgb));
+  overflow-x: hidden;
+  min-height: calc(var(--vh, 1vh) * 100);
+  position: relative;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+body::-webkit-scrollbar-thumb {
+  background: rgba(var(--vlr-scrollbar-rgb), 0.54);
+  border-radius: 4px;
+  border: 1px solid var(--vlr-border-solid);
+}
+
+ul{
+    list-style-type: none;
+}
+.vlr-collection-text, .num{
+    display: block;
+}

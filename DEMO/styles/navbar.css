@@ -1,0 +1,252 @@
+/* Googlefont Poppins CDN Link */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+/* --- Navigation Bar --- */
+nav {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width:100vw;
+  max-width: calc(100% - 200px);
+  z-index: 1;
+  border-radius: 15px;
+  transition: all 0.3s ease-in-out;
+}
+
+/* --- Glass Effect --- */
+nav {
+    background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.06) 25%,
+      rgba(255, 255, 255, 0.04) 50%,
+      rgba(255, 255, 255, 0.02) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-color);
+  border-radius: 28px;
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.35),
+    0 20px 40px rgba(0, 0, 0, 0.25),
+    0 8px 16px rgba(0, 0, 0, 0.15),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(60px) saturate(100%);
+  -webkit-backdrop-filter: blur(60px) saturate(100%);
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 0 30px;
+}
+#navbar{
+  opacity: 1;
+  pointer-events: all;
+  transition: all 0.2s;
+}
+
+#navbar.fade{
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+}
+/* --- Centered Logo --- */
+.logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.logo a img {
+  height: 30px; /* Adjust as needed */
+  width: auto;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.logo a:hover img {
+    transform: scale(1.1);
+}
+
+/* --- Navigation Links --- */
+.nav-links ul {
+  display: flex;
+  list-style: none;
+}
+
+.nav-links li {
+  padding: 0 20px;
+}
+
+.nav-links a,
+.mobile-menu a {
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+  font-size: 16px;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-links a::after,
+.mobile-menu a::after{
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover,
+.mobile-menu a {
+  color: #f0f0f0;
+}
+
+.nav-links a:hover::after,
+.mobile-menu a:hover::after {
+  width: 100%;
+}
+
+.mobile-menu-toggle{
+  display: none;
+}
+/* --- Mobile Menu --- */
+.mobile-menu-icons {
+  display: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.bx-x {
+    display: none;
+}
+
+.mobile-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 20px;
+  width: 28px;
+  cursor: pointer;
+}
+
+.mobile-toggle .bar {
+  height: 3px;
+  width: 100%;
+  background-color: white;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+/* --- Fullscreen Mobile Menu --- */
+.mobile-menu {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+  /* width: 100vw; */
+  background: rgba(10, 10, 10, 0.95);
+  /* backdrop-filter: blur(20px); */
+  /* -webkit-backdrop-filter: blur(20px); */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+  padding: 60px 20px;
+}
+
+.mobile-menu.active {
+  opacity: 1;
+  pointer-events: all;
+  transition: all 0.2s;
+}
+
+/* --- Close Button --- */
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 34px;
+  font-size: 26px;
+  color: white;
+  cursor: pointer;
+}
+
+/* --- Mobile Menu Content --- */
+.mobile-menu ul {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
+.mobile-menu li {
+  margin: 20px 0;
+}
+
+.mobile-menu a {
+  color: white;
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+/* --- Search in Mobile Menu --- */
+.mobile-search {
+  margin-bottom: 30px;
+  width: 80%;
+}
+
+.mobile-search input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 16px;
+}
+
+@media (max-width: 1400px) {
+  nav{
+    top: 0px;
+    max-width: 100%;
+    border-radius: 0px;
+    background:
+    linear-gradient(135deg,
+      rgba(5, 5, 5, 0.52) 0%,
+      rgba(5, 5, 5, 0.46) 25%,
+      rgba(5, 5, 5, 0.44) 50%,
+      rgba(5, 5, 5, 0.42) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-color);
+  }
+  .left-links,
+  .right-links {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: flex;
+  }
+
+  .logo {
+    position: relative;
+    left: auto;
+    transform: none;
+    margin: auto;
+  }
+
+  .nav-container {
+    justify-content: space-between;
+  }
+}

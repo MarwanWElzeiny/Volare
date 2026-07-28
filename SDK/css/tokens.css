@@ -1,0 +1,2 @@
+/* Legacy compatibility wrapper — canonical tokens live in core-tokens.css */
+@import url('./core-tokens.css');

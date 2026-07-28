@@ -1,0 +1,554 @@
+:root {
+  --vlr-color-white: #fff;
+  --vlr-color-black: #000;
+  --vlr-mask-opaque: #000;
+  --vlr-color-overlay: rgba(0, 0, 0, 0.34);
+  --vlr-color-overlay-strong: rgba(0, 0, 0, 0.8);
+  --vlr-color-gallery-chip-start: rgba(46, 46, 46, 0.2);
+  --vlr-color-gallery-chip-end: rgba(37, 37, 37, 0.1);
+  --vlr-color-glass-button: rgba(12, 12, 12, 0.78);
+  --vlr-color-glass-button-hover: rgba(255, 255, 255, 0.18);
+  --vlr-color-glass-border: rgba(255, 255, 255, 0.24);
+  --vlr-color-glass-highlight: rgba(255, 255, 255, 0.12);
+  --vlr-shadow-gallery-chip: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --vlr-shadow-close-button: 0 12px 36px rgba(0, 0, 0, 0.38), inset 0 1px 0 var(--vlr-color-glass-highlight);
+  --vlr-viewer-width: 90vw;
+  --vlr-viewer-mobile-width: 96vw;
+  --vlr-viewer-blur-gap: 0px;
+  --vlr-viewer-side-gap: calc((100vw - var(--vlr-viewer-width)) / 2);
+  --vlr-viewer-blur-side-gap: max(0px, calc(var(--vlr-viewer-side-gap) - var(--vlr-viewer-blur-gap)));
+}
+
+/* ────────────────
+   Layout Containers
+──────────────────── */
+.wrapper {
+  margin: 100px auto;
+  max-width: 1100px;
+}
+.wrapper .nav-gallery {
+  display: flex;
+  justify-content: center;
+}
+.wrapper .items {
+  display: flex;
+  max-width: 600px;
+  width: 100%;
+  justify-content: space-between;
+}
+.wrapper-gallery {
+  margin: 100px auto;
+}
+.wrapper-gallery .name-artwork {
+  color: var(--vlr-color-white);
+  font-weight: bold;
+  text-align: center;
+  padding-top: 30px;
+}
+.wrapper-gallery .nav-gallery {
+  display: flex;
+  justify-content: center;
+}
+.wrapper-gallery .items {
+  display: flex;
+  max-width: 550px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+/* ────────────────
+   Gallery Grid
+──────────────────── */
+.gallery {
+  padding: 0 30px;
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.gallery .image {
+  width: calc(100% / 3);
+  height: 100%;
+  padding: 10px;
+  border-radius: 200px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gallery .image:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+.gallery .image .overlay {
+  position: absolute;
+  top: calc(100% - 101px);
+  right: 0;
+  width: 100%;
+  padding-right: 38px;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0.6;
+  pointer-events: none;
+  transition: 0.3s linear;
+}
+.gallery .image .overlay .type {
+  position: absolute;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--vlr-color-gallery-chip-start), var(--vlr-color-gallery-chip-end));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--vlr-color-glass-border);
+  box-shadow: var(--vlr-shadow-gallery-chip);
+  color: var(--vlr-color-white);
+  border-radius: 50px;
+  transition: all ease 0.4s;
+  margin: auto;
+}
+.gallery .image .overlay i {
+  padding-left: 10px;
+  display: flex;
+  font-size: 19px;
+}
+.gallery .image .overlay .typetwo::before {
+  content: "|";
+  font-weight: 100;
+}
+.gallery .image:hover .overlay {
+  opacity: 1;
+  transform: translateY(-2px) scale(1.02);
+}
+.gallery .image img,
+.gallery .image video {
+  width: 100%;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 20px !important;
+  transition: all 0.3s ease;
+}
+.gallery .image video {
+  object-position: 50% 10%;
+}
+.gallery .image img {
+  object-position: 20% 10%;
+}
+.gallery .image span {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+}
+.gallery .image.hide {
+  display: none;
+}
+.gallery .image.show {
+  animation: animate 0.4s ease;
+}
+@keyframes animate {
+  0% { transform: scale(0.5); }
+  100% { transform: scale(1); }
+}
+
+/* ────────────────
+   Preview Overlay
+──────────────────── */
+.blurred-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--vh, 1vh) * 100);
+  background: var(--vlr-color-overlay-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 400;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.blurred-bg.show {
+  opacity: 1;
+}
+
+/* ────────────────
+   Volare Canvas (Main Container)
+──────────────────── */
+#VolareCanvas {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
+  width: 90%;
+  min-width: 0;
+  margin: auto;
+  height: calc(var(--vh, 1vh) * 100);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0;
+  pointer-events: none;
+  padding: 0;
+  color: var(--vlr-color-white);
+  background: transparent;
+  isolation: isolate;
+}
+
+#VolareCanvas.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+body:has(#VolareCanvas.show.is-viewer-ready)::before,
+body:has(#VolareCanvas.show.is-warning)::before,
+body.volare-viewer-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(28px) saturate(145%);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
+}
+
+#VolareCanvas.is-viewer-ready::before,
+#VolareCanvas.is-warning::before {
+  content: none;
+}
+
+#VolareCanvas:not(.is-viewer-ready) .details,
+#VolareCanvas.is-warning .vlr-model-attr-main,
+#VolareCanvas.is-warning .vlr-mesh-analysis-main,
+#VolareCanvas.is-warning #vlr-model-attr-data,
+#VolareCanvas.is-warning #vlr-visual-toolkit,
+#VolareCanvas.is-warning #animation-panel {
+  display: none !important;
+}
+
+#VolareCanvas.is-viewer-ready .vlr-model-notice {
+  display: none !important;
+}
+
+#VolareCanvas.is-warning #model-access-form.notice-card {
+  animation: volare-warning-enter 0.28s ease-out both;
+}
+
+@keyframes volare-warning-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ────────────────
+   Model Container (3D Content Area)
+──────────────────── */
+#vlr-model-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Model {
+  width: 100%;
+  height: calc(var(--vh, 1vh) * 100);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ────────────────
+   Details Section (Inside Canvas)
+──────────────────── */
+.details {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 2147483000;
+  pointer-events: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: transparent;
+  border-radius: 0;
+}
+
+.vlr-details-icon {
+  pointer-events: all;
+}
+
+.vlr-close-preview-icon {
+  position: fixed !important;
+  top: 16px !important;
+  right: 16px !important;
+  left: auto !important;
+  z-index: 2147483001;
+  font-size: 22px;
+  color: var(--vlr-color-white);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--vlr-color-glass-button);
+  border: 1px solid var(--vlr-color-glass-border);
+  box-shadow: var(--vlr-shadow-close-button);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  transition: all 0.3s ease;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: all !important;
+}
+
+.vlr-close-preview-icon:hover {
+  background: var(--vlr-color-glass-button-hover);
+  transform: scale(1.1);
+}
+
+#vlr-collection-d {
+  display: none;
+}
+
+body:has(#VolareCanvas.show.is-viewer-ready) #vlr-collection-d,
+body.volare-viewer-open #vlr-collection-d {
+  display: flex !important;
+}
+
+@media (max-width: 1400px) {
+  #VolareCanvas {
+    width: 100vw;
+  }
+
+  body:has(#VolareCanvas.show.is-viewer-ready)::before,
+  body.volare-viewer-open::before {
+    padding: 0;
+  }
+}
+/* ────────────────
+   Responsive Design
+──────────────────── */
+@media (max-width: 800px) {
+  #VolareCanvas {
+    width: 100%;
+    min-width: 0;
+    height: calc(var(--vh, 1vh) * 100);
+    padding: 0;
+  }
+
+  body:has(#VolareCanvas.show.is-viewer-ready)::before,
+  body.volare-viewer-open::before {
+    padding: 0;
+  }
+
+  .details {
+    top: 10px;
+    right: 10px;
+    padding: 0;
+  }
+
+  .vlr-close-preview-icon {
+    top: 10px !important;
+    right: 10px !important;
+    left: auto !important;
+    font-size: 20px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vlr-close-preview-icon {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    width: 42px;
+    height: 42px;
+  }
+}
+
+.details .titleGallery {
+  display: flex;
+  color: var(--vlr-color-white);
+  font-size: 16px;
+  font-weight: 400;
+  border-radius: 20px;
+  text-align: center;
+  letter-spacing: 0.1cm;
+  padding: 4px;
+  width: fit-content;
+}
+.vlr-details-icon {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  z-index: 100;
+  position: relative;
+  cursor: pointer;
+  pointer-events: all;
+}
+.vlr-details-icon span {
+  text-align: center;
+  padding: 10px;
+  pointer-events: all;
+}
+.details .vlr-close-preview-icon,
+.Tabs .vlr-close-preview-icon {
+  color: var(--vlr-color-white);
+  font-size: 22px;
+  float: right;
+  position: fixed !important;
+  pointer-events: all;
+}
+
+/* ────────────────
+   Navigation Arrows
+──────────────────── */
+.image-box .slide {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--vlr-color-white);
+  font-size: 30px;
+  cursor: pointer;
+  height: 50px;
+  width: 60px;
+  line-height: 50px;
+  text-align: center;
+  border-radius: 3px;
+  z-index: 999;
+}
+.slide.prev { left: 0; }
+.slide.next { right: 0; }
+
+@media (max-width: 1400px) {
+  body.volare-advanced-open .vlr-close-preview-icon,
+  body.volare-viewer-open.volare-advanced-open .vlr-close-preview-icon {
+    opacity: 0 !important;
+    visibility: visible !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 700px) {
+  body.volare-viewer-open .vlr-close-preview-icon {
+    transition: opacity 0.2s ease, transform 0.3s ease, background 0.3s ease;
+  }
+
+  body.volare-viewer-open.volare-advanced-open .vlr-close-preview-icon {
+    transition-delay: 0s, 0s, 0s;
+  }
+}
+
+/* ────────────────
+   Responsive Styles
+──────────────────── */
+@media (max-width: 1399px) {
+  .visual-toolkit.active ~ .preview-box .details {
+    display: none !important;
+  }
+}
+@media (max-width: 1000px) {
+  .gallery .image {
+    width: calc(100% / 3);
+  }
+}
+@media (max-width: 800px) {
+  .gallery .image {
+    width: calc(100% / 2);
+  }
+}
+@media (max-width: 700px) {
+  .wrapper .nav-gallery .items {
+    max-width: 500px;
+  }
+  .wrapper .nav-gallery .items .item {
+    font-size: 16px;
+  }
+  .nav-gallery .items span {
+    padding: 7px 15px;
+  }
+}
+@media (max-width: 600px) {
+  .wrapper {
+    margin: 30px auto;
+  }
+  .wrapper .nav-gallery .items {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 400px;
+  }
+  .nav-gallery .items span {
+    margin: 50px auto;
+    padding: 7px 15px;
+    font-size: 14px;
+  }
+  .gallery .image {
+    width: 100%;
+  }
+  .preview-box .details {
+    padding: 13px 18px;
+    color: var(--vlr-color-black);
+  }
+  .details .titleGallery {
+    font-size: 10px;
+    height: 10px;
+    padding: 7px;
+  }
+}
+@media (max-width: 500px) {
+  .wrapper .nav-gallery .items {
+    max-width: 400px;
+  }
+  .wrapper .nav-gallery .items .item {
+    font-size: 13px;
+  }
+}
+@media (max-width: 400px) {
+  .wrapper .nav-gallery .items {
+    max-width: 350px;
+  }
+  .wrapper .nav-gallery .items .item {
+    font-size: 11px;
+  }
+  .slide.next {
+    font-size: 20px;
+    right: -10px;
+  }
+  .slide.prev {
+    font-size: 20px;
+    left: -10px;
+  }
+}
+@media (max-width: 360px) {
+  .wrapper .nav-gallery .items {
+    max-width: 290px;
+  }
+  .wrapper .nav-gallery .items .item {
+    font-size: 8px;
+  }
+}
+
+/* ────────────────
+   Direct viewer mode (DemoDirect.html) — full width, no X button
+──────────────────── */
+body.volare-direct-mode #VolareCanvas {
+  width: 100vw;
+}
+
+body.volare-direct-mode #vlr-collection-d,
+body.volare-direct-mode .vlr-close-preview-icon {
+  display: none !important;
+}
+
+body.volare-direct-mode::before {
+  content: none !important;
+}

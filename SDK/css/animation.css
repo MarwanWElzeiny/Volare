@@ -1,0 +1,329 @@
+/* Volare Animation — #animation-panel + all animation sub-components */
+
+#animation-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2%;
+    width: 95%;
+    margin: auto;
+    display: flex;
+    padding: 7px 12px;
+    border-radius: 50px;
+    background: var(--vlr-glass-bg);
+    backdrop-filter: var(--vlr-glass-blur);
+    border: var(--vlr-glass-border);
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: var(--vlr-shadow-soft);
+    z-index: 1002;
+}
+
+#VolareCanvas.is-viewer-ready:not(:has(#animation-panel.vlr-anim-active)) #vlr-visual-toolkit {
+    bottom: 4%;
+}
+
+#animation-panel:not(.vlr-anim-active) {
+    display: none;
+}
+
+.vlr-animation-grid {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    position: relative;
+}
+
+.vlr-animation-grid-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.vlr-animation-grid-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    min-width: 0;
+}
+
+.animation-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.vlr-main-anim-controls,
+.vlr-extra-anim-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vlr-advanced-anim-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--vlr-control-bg);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.vlr-advanced-anim-button:hover {
+    background: var(--vlr-control-bg-hover);
+}
+
+.vlr-advanced-anim-button[aria-disabled="true"] {
+    opacity: var(--vlr-control-disabled-opacity);
+    pointer-events: none;
+    cursor: default;
+}
+
+.vlr-advanced-anim-button i {
+    color: rgb(var(--vlr-surface-rgb));
+    font-size: 18px;
+    margin: 0;
+}
+
+.vlr-advanced-anim-button h4 {
+    display: none;
+}
+
+.frame-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.animation-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.info-label {
+    display: none;
+}
+
+.info-value {
+    color: rgb(var(--vlr-surface-rgb));
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    margin: auto;
+    padding-right: 6px;
+}
+
+.animation-progress {
+    flex: 1;
+    height: 6px;
+    background: rgba(var(--vlr-surface-rgb), 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    margin: 0;
+    min-width: 100px;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 100%;
+    background: rgb(var(--vlr-surface-rgb));
+    border-radius: 3px;
+    /* Composited scaleX, not width: this panel has a backdrop-filter, and
+       writing `width` every frame forced a layout plus a full re-blur of the
+       glass behind it -- the main cause of the lag while animations played. */
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.1s linear;
+    will-change: transform;
+}
+
+.vlr-advanced-anim-preset,
+.animation-selector-btn {
+    font-family: var(--vlr-font-family, 'Poppins', sans-serif);
+    background: var(--vlr-control-bg-active);
+    border: none;
+    border-radius: 25px;
+    padding: 10px 20px;
+    color: rgb(var(--vlr-surface-rgb));
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vlr-advanced-anim-preset:hover,
+.animation-selector-btn:hover {
+    background: var(--vlr-control-bg-hover);
+}
+
+.vlr-advanced-anim-preset option {
+    background: var(--vlr-track-bg);
+    color: rgb(var(--vlr-surface-rgb));
+}
+
+.animation-selector-btn i {
+    font-size: 0.75rem;
+}
+
+.animation-selector-container {
+    position: relative;
+}
+
+.animation-selector-btn {
+    min-width: 180px;
+    justify-content: space-between;
+}
+
+.vlr-playback-options {
+    position: absolute;
+    font-family: var(--vlr-font-family, 'Poppins', sans-serif);
+    bottom: calc(100% + 15px);
+    left: 0;
+    background: var(--vlr-glass-bg);
+    backdrop-filter: var(--vlr-glass-blur);
+    border: var(--vlr-glass-border);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: var(--vlr-shadow-panel);
+    min-width: 250px;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.1);
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+    filter: blur(8px);
+    z-index: 1000;
+}
+
+.vlr-playback-options.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+    filter: blur(0);
+}
+
+.vlr-playback-options p {
+    color: rgb(var(--vlr-surface-rgb));
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    padding: 0;
+}
+
+.speed-control {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.speed-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.speed-preset-btn {
+    display: none;
+}
+
+.speed-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.speed-slider-container label {
+    color: rgba(var(--vlr-surface-rgb), 0.7);
+    font-size: 0.8rem;
+    font-weight: 500;
+    min-width: 50px;
+}
+
+.speed-slider-container input[type="range"] {
+    flex: 1;
+    height: 5px;
+    background: rgba(var(--vlr-surface-rgb), 0.15);
+    border-radius: 2.5px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.speed-slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: rgb(var(--vlr-surface-rgb));
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(var(--vlr-shadow-rgb), 0.3);
+}
+
+.speed-slider-container input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: rgb(var(--vlr-surface-rgb));
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(var(--vlr-shadow-rgb), 0.3);
+}
+
+#speed-value {
+    color: rgb(var(--vlr-surface-rgb));
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 35px;
+    text-align: right;
+}
+
+.speed-select-container,
+.playback-mode-container,
+.display-mode-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.speed-select-container label,
+.playback-mode-container label,
+.display-mode-container label {
+    color: rgba(var(--vlr-surface-rgb), 0.7);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+#speed-select,
+#vlr-playback-speed,
+#display-mode {
+    width: 100%;
+}
+
+.animation-list,
+.anim-duration {
+    display: none;
+}

@@ -1,0 +1,77 @@
+{
+  "name": "volare",
+  "version": "1.0.0",
+  "description": "A buildless 3D model viewer for the web. Loads GLB/glTF/FBX/OBJ, ships an inspection toolkit (wireframe, cross-section, UV, mesh stats), HDRI lighting, and CSS-token theming.",
+  "keywords": [
+    "3d-viewer",
+    "threejs",
+    "three",
+    "gltf",
+    "glb",
+    "fbx",
+    "obj",
+    "webgl",
+    "webgpu",
+    "model-viewer",
+    "3d",
+    "viewer",
+    "hdri",
+    "pbr",
+    "esm"
+  ],
+  "homepage": "https://github.com/MarwanWElzeiny/Volare#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarwanWElzeiny/Volare.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MarwanWElzeiny/Volare/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "author": "Marwan W. Elzeiny <marwan.waleed.yousry@gmail.com>",
+  "main": "SDK/Core/createVolareViewer.js",
+  "module": "SDK/Core/createVolareViewer.js",
+  "sideEffects": ["SDK/Utils/ssrGlobalsShim.js"],
+  "exports": {
+    ".": "./SDK/Core/createVolareViewer.js",
+    "./core": "./SDK/Core/createVolareViewer.js",
+    "./viewer": "./SDK/Core/VolareViewer.js",
+    "./security/*": "./SDK/Security/*.js",
+    "./managers/*": "./SDK/Managers/*.js",
+    "./ui": "./SDK/UI/ViewerUIController.js",
+    "./ui/*": "./SDK/UI/*.js",
+    "./utils/*": "./SDK/Utils/*.js",
+    "./styles/core.css": "./SDK/css/core-tokens.css",
+    "./styles/volare.css": "./SDK/css/volare.css"
+  },
+  "files": [
+    "SDK/",
+    "Demo/",
+    "examples/",
+    "docs/",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "validate": "node tools/validate-volare.mjs",
+    "security:audit": "node tools/security-audit.mjs",
+    "test:security": "node tests/security.test.cjs",
+    "test": "npm run test:security && node tests/lifecycle-callbacks.test.mjs && node tests/tool-exclusivity.test.mjs",
+    "start": "node server/app.js"
+  },
+  "peerDependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
