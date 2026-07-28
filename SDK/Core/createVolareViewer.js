@@ -166,6 +166,8 @@ function validateConfig(config = {}) {
   if (isPlainObject(config.environment)) {
     validateNumber(config, 'environment', 'intensity');
     validateNumber(config, 'environment', 'backgroundBlur');
+    validateNumber(config, 'environment', 'backgroundBlurStrength');
+    validateNumber(config, 'environment', 'cacheSize');
     validateStringEnum(config, 'environment', 'background', ['current', 'blurred', 'color', 'transparent']);
   }
 
@@ -300,6 +302,8 @@ function normalizeConfig(config = {}) {
       background: 'current',
       backgroundColor: '#000000',
       backgroundBlur: 0.35,
+      backgroundBlurStrength: undefined,
+      cacheSize: 3,
       ...(config.environment || {})
     },
     tools: mergedTools,

@@ -122,6 +122,8 @@ const DEFAULT_ENVIRONMENT_CONFIG = {
   background: 'current',
   backgroundColor: '#000000',
   backgroundBlur: 0.35,
+  backgroundBlurStrength: undefined,
+  cacheSize: 3,
   fallback: null
 };
 
@@ -136,17 +138,24 @@ export class LightingManager {
     this.pmremGenerator = renderer?.isWebGPURenderer
       ? new NodePMREMGenerator(renderer)
       : new THREE.PMREMGenerator(renderer);
+    this.pmremGenerator?.compileEquirectangularShader?.();
     this.currentEnvironmentMap = null;
     this.currentEnvironmentUrl = null;
+    this.currentEnvironmentEntry = null;
     this.hdrLoader = new HDRLoader();
     this.isEnvironmentEnabled = true;
     this.config = { ...DEFAULT_ENVIRONMENT_CONFIG };
     this.lastError = null;
     this.disposedEnvironmentCount = 0;
+    this.environmentCache = new Map();
+    this.pendingEnvironmentLoads = new Map();
+    this._environmentLoadQueue = Promise.resolve();
+    this._environmentLoadSequence = 0;
+    this._disposed = false;
   }
 
   getPresets() {
-    return VOLARE_HDRI_PRESETS.map(preset => ({ ...preset, url: hdr(preset.file) }));
+    return getHdriPresets();
   }
 
   normalizeEnvironmentConfig(environmentConfig = {}) {
@@ -169,10 +178,21 @@ export class LightingManager {
       };
     }
 
-    return {
+    const nextConfig = {
       ...this.config,
       ...environmentConfig
     };
+
+    if ((!environmentConfig || !('backgroundBlur' in environmentConfig)) && Number.isFinite(nextConfig.backgroundBlurStrength)) {
+      nextConfig.backgroundBlur = nextConfig.backgroundBlurStrength;
+    }
+
+    const cacheSize = Number(nextConfig.cacheSize);
+    nextConfig.cacheSize = Number.isFinite(cacheSize) && cacheSize >= 0
+      ? Math.floor(cacheSize)
+      : DEFAULT_ENVIRONMENT_CONFIG.cacheSize;
+
+    return nextConfig;
   }
 
   resolveHDRI(config) {
@@ -180,7 +200,7 @@ export class LightingManager {
     const hdri = config.hdri || config.url || null;
     const allPresets = [...VOLARE_HDRI_PRESETS, ...customHdriPresets];
     const preset = allPresets.find(item => item.id === presetId || item.label === presetId);
-    return preset ? hdr(preset.file) : hdri;
+    return preset ? resolveHdriFile(preset) : resolveWithBasePath(hdri);
   }
 
   async loadHDRI(hdriPath) {
@@ -196,9 +216,14 @@ export class LightingManager {
         hdriPath,
         texture => {
           try {
-            const generated = this.pmremGenerator.fromEquirectangular(texture).texture;
+            const renderTarget = this.pmremGenerator.fromEquirectangular(texture);
             texture.dispose();
-            resolve(generated);
+            resolve({
+              url: hdriPath,
+              texture: renderTarget.texture,
+              renderTarget,
+              lastUsedAt: Date.now()
+            });
           } catch (error) {
             texture.dispose();
             reject(error);
@@ -210,12 +235,102 @@ export class LightingManager {
     });
   }
 
-  disposeCurrentEnvironmentMap() {
-    if (!this.currentEnvironmentMap) return;
-    this.currentEnvironmentMap.dispose();
-    this.currentEnvironmentMap = null;
-    this.currentEnvironmentUrl = null;
+  touchEnvironmentEntry(entry) {
+    if (!entry) return entry;
+    entry.lastUsedAt = Date.now();
+    return entry;
+  }
+
+  rememberEnvironmentEntry(entry) {
+    if (!entry?.url) return entry;
+    this.environmentCache.set(entry.url, this.touchEnvironmentEntry(entry));
+    return entry;
+  }
+
+  getCachedEnvironmentEntry(hdriPath) {
+    const entry = this.environmentCache.get(hdriPath);
+    return entry ? this.touchEnvironmentEntry(entry) : null;
+  }
+
+  disposeEnvironmentEntry(entry) {
+    if (!entry) return;
+    if (entry.url && this.environmentCache.get(entry.url) === entry) {
+      this.environmentCache.delete(entry.url);
+    }
+    if (this.currentEnvironmentEntry === entry) {
+      this.currentEnvironmentEntry = null;
+      this.currentEnvironmentMap = null;
+      this.currentEnvironmentUrl = null;
+    }
+    entry.renderTarget?.dispose?.();
+    if (!entry.renderTarget && entry.texture?.dispose) {
+      entry.texture.dispose();
+    }
     this.disposedEnvironmentCount += 1;
+  }
+
+  applyEnvironmentEntry(entry) {
+    this.currentEnvironmentEntry = entry || null;
+    this.currentEnvironmentMap = entry?.texture || null;
+    this.currentEnvironmentUrl = entry?.url || null;
+    this.touchEnvironmentEntry(entry);
+  }
+
+  pruneEnvironmentCache(preserveEntry = null) {
+    const maxCached = Number.isFinite(this.config?.cacheSize) ? this.config.cacheSize : DEFAULT_ENVIRONMENT_CONFIG.cacheSize;
+    if (maxCached < 0) return;
+
+    while (this.environmentCache.size > maxCached) {
+      let evictionCandidate = null;
+      for (const entry of this.environmentCache.values()) {
+        if (!entry) continue;
+        if (entry === preserveEntry || entry === this.currentEnvironmentEntry) continue;
+        if (!evictionCandidate || (entry.lastUsedAt || 0) < (evictionCandidate.lastUsedAt || 0)) {
+          evictionCandidate = entry;
+        }
+      }
+      if (!evictionCandidate) break;
+      this.disposeEnvironmentEntry(evictionCandidate);
+    }
+  }
+
+  enqueueEnvironmentLoad(task) {
+    const run = this._environmentLoadQueue.then(task, task);
+    this._environmentLoadQueue = run.catch(() => {});
+    return run;
+  }
+
+  async getOrLoadEnvironmentEntry(hdriPath) {
+    const cached = this.getCachedEnvironmentEntry(hdriPath);
+    if (cached) return cached;
+
+    const pending = this.pendingEnvironmentLoads.get(hdriPath);
+    if (pending) return pending;
+
+    const loadTask = this.enqueueEnvironmentLoad(async () => {
+      const cachedAgain = this.getCachedEnvironmentEntry(hdriPath);
+      if (cachedAgain) return cachedAgain;
+
+      const entry = await this.loadHDRI(hdriPath);
+      if (this._disposed) {
+        this.disposeEnvironmentEntry(entry);
+        throw new Error('LightingManager was disposed during HDRI load.');
+      }
+      return this.rememberEnvironmentEntry(entry);
+    });
+
+    this.pendingEnvironmentLoads.set(hdriPath, loadTask);
+    try {
+      return await loadTask;
+    } finally {
+      if (this.pendingEnvironmentLoads.get(hdriPath) === loadTask) {
+        this.pendingEnvironmentLoads.delete(hdriPath);
+      }
+    }
+  }
+
+  disposeCurrentEnvironmentMap() {
+    this.disposeEnvironmentEntry(this.currentEnvironmentEntry);
   }
 
   applyBackground(config) {
@@ -265,6 +380,7 @@ export class LightingManager {
   async setEnvironment(environmentConfig) {
     const nextConfig = this.normalizeEnvironmentConfig(environmentConfig);
     const hdriPath = this.resolveHDRI(nextConfig);
+    const requestSequence = ++this._environmentLoadSequence;
     const shouldLoadHDRI = nextConfig.enabled && hdriPath && hdriPath !== this.currentEnvironmentUrl;
     this.lastError = null;
 
@@ -273,20 +389,21 @@ export class LightingManager {
       this.isEnvironmentEnabled = false;
       this.scene.environment = null;
       this.scene.background = null;
-      this.disposeCurrentEnvironmentMap();
       this.applyBackground(nextConfig);
       return this.getDiagnostics();
     }
 
     try {
       if (shouldLoadHDRI) {
-        const nextMap = await this.loadHDRI(hdriPath);
-        this.disposeCurrentEnvironmentMap();
-        this.currentEnvironmentMap = nextMap;
-        this.currentEnvironmentUrl = hdriPath;
+        const nextEntry = await this.getOrLoadEnvironmentEntry(hdriPath);
+        if (requestSequence !== this._environmentLoadSequence) {
+          return this.getDiagnostics();
+        }
+        this.applyEnvironmentEntry(nextEntry);
       }
 
       this.config = { ...nextConfig, hdri: hdriPath };
+      this.pruneEnvironmentCache(this.currentEnvironmentEntry);
       this.isEnvironmentEnabled = true;
       this.applyBackground(this.config);
       return this.getDiagnostics();
@@ -327,6 +444,9 @@ export class LightingManager {
       backgroundColor: this.config.backgroundColor,
       intensity: this.config.intensity,
       hasEnvironmentMap: !!this.currentEnvironmentMap,
+      cacheSize: this.config.cacheSize,
+      cachedEnvironmentCount: this.environmentCache.size,
+      pendingEnvironmentLoads: this.pendingEnvironmentLoads.size,
       disposedEnvironmentCount: this.disposedEnvironmentCount,
       lastError: this.lastError,
       availablePresets: this.getPresets()
@@ -334,9 +454,15 @@ export class LightingManager {
   }
 
   dispose() {
+    this._disposed = true;
     this.scene.environment = null;
     this.scene.background = null;
     this.disposeCurrentEnvironmentMap();
+    for (const entry of [...this.environmentCache.values()]) {
+      this.disposeEnvironmentEntry(entry);
+    }
+    this.environmentCache.clear();
+    this.pendingEnvironmentLoads.clear();
     this.pmremGenerator?.dispose();
   }
 }

@@ -60,7 +60,7 @@
     "validate": "node tools/validate-volare.mjs",
     "security:audit": "node tools/security-audit.mjs",
     "test:security": "node tests/security.test.cjs",
-    "test": "npm run test:security && node tests/lifecycle-callbacks.test.mjs && node tests/tool-exclusivity.test.mjs",
+    "test": "npm run test:security && node tests/lifecycle-callbacks.test.mjs && node tests/tool-exclusivity.test.mjs && node tests/lighting-controller.test.mjs",
     "start": "node server/app.js"
   },
   "peerDependencies": {
