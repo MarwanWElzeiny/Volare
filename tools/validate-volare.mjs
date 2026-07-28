@@ -52,8 +52,24 @@ const forbiddenReferences = [
 
 const errors = [];
 
+function resolvePath(relativePath) {
+  const normalized = relativePath.replace(/\\/g, '/');
+  const parts = normalized.split('/').filter(Boolean);
+  let currentDir = root;
+
+  for (const part of parts) {
+    if (!fs.existsSync(currentDir)) return null;
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    const match = entries.find((entry) => entry.name.toLowerCase() === part.toLowerCase());
+    if (!match) return null;
+    currentDir = path.join(currentDir, match.name);
+  }
+
+  return path.relative(root, currentDir).replace(/\\/g, '/');
+}
+
 function exists(relativePath) {
-  return fs.existsSync(path.join(root, relativePath));
+  return resolvePath(relativePath) !== null;
 }
 
 for (const requiredPath of requiredPaths) {
