@@ -22,6 +22,13 @@
   <img src="./media/Demo.gif" alt="Volare Demo" width="100%">
 </p>
 
+## Live Demo
+
+**Try Volare in your browser:**
+
+**https://marwanwelzeiny.github.io/Volare/DEMO/**
+
+No installation required.
 
 ## Install
 
@@ -34,7 +41,12 @@ git clone https://github.com/MarwanWElzeiny/Volare.git
 Three.js is a peer dependency (`^0.185.1`) — load it from a CDN via import map,
 or install it if you use a bundler.
 
-## Demo
+### Run locally
+
+```bash
+npm install
+npm start
+```
 
 ```bash
 npm install && npm start
