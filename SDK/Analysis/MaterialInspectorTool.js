@@ -22,6 +22,7 @@ export class MaterialInspector {
 
     activate() {
         if (this.isActive) return;
+        if (this._hideTimeout) { clearTimeout(this._hideTimeout); this._hideTimeout = null; }
         this.onBeforeActivate?.(); // switches display mode to Original (not texture reset)
         this.isActive = true;
         this._notifyVisualToolkit('material-inspector-open');

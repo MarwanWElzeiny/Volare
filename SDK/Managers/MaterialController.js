@@ -156,6 +156,8 @@ export class MaterialManager {
     }
     helper.userData.isWireframeMesh = true;
     helper.renderOrder = 1;
+    // Match the source mesh: animated bounds are stale, so culling drops limbs.
+    if (mesh.frustumCulled === false) helper.frustumCulled = false;
     mesh.add(helper);
   }
 
@@ -169,6 +171,9 @@ export class MaterialManager {
   }
 
   dispose() {
+    for (const mat of this.originalMaterials.values()) {
+      if (mat && typeof mat.dispose === 'function') mat.dispose();
+    }
     this.originalMaterials.clear();
     Object.values(this.materialCache).forEach(material => material.dispose());
   }

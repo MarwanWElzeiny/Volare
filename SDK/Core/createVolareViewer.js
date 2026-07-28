@@ -246,6 +246,7 @@ function applyUIConfig(container, uiConfig) {
   }
   if (!uiConfig.resetCameraButton) {
     hide('#vlr-center-camera');
+    hide('#vlr-reset-camera');
     hide('#vlr-reset-toggle');
   }
   if (!uiConfig.loadingScreen) hide('.loading');

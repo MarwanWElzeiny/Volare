@@ -15,8 +15,11 @@ export class MeshAnalysis {
     this.infoPanel = null;
     this.onClose = null;
     this._toastHandle = null;
+    this._targetBorders = new Map();
+    this._hoveredMesh = null;
 
     this._onClick = this._onClick.bind(this);
+    this._onMouseMove = this._onMouseMove.bind(this);
   }
 
   _notifyVisualToolkit(type, detail = {}) {
@@ -29,6 +32,8 @@ export class MeshAnalysis {
     if (this.isActive) return;
     this.isActive = true;
     this.domElement.addEventListener('click', this._onClick);
+    this.domElement.addEventListener('mousemove', this._onMouseMove);
+    this._createTargetBorders();
     this._notifyVisualToolkit('mesh-inspector-open');
     this._toastHandle = showTopToast(
       'Mesh Inspector',
@@ -41,6 +46,10 @@ export class MeshAnalysis {
     if (!this.isActive) return;
     this.isActive = false;
     this.domElement.removeEventListener('click', this._onClick);
+    this.domElement.removeEventListener('mousemove', this._onMouseMove);
+    this.domElement.style.cursor = '';
+    this._hoveredMesh = null;
+    this._removeTargetBorders();
     hideTopToast(this._toastHandle);
     this._toastHandle = null;
     this._clearHighlight();
@@ -49,35 +58,117 @@ export class MeshAnalysis {
     this.onClose?.();
   }
 
-  _onClick(e) {
-    if (!this.isActive) return;
-
-    const rect = this.domElement.getBoundingClientRect();
-    const mouse = new THREE.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1
-    );
-
-    this.raycaster.setFromCamera(mouse, this.camera);
-
+  // Same eligibility filter used by both the click-to-select raycast and the
+  // persistent per-mesh borders, so they never disagree on what's clickable.
+  _getEligibleTargets() {
     const targets = [];
     this.scene.traverse((child) => {
       if (
         child.isMesh &&
         child.visible &&
         !child.userData.volareHelper &&
-        !child.userData.isWireframeHelper &&
+        !child.userData.isWireframeMesh &&
         !(child instanceof THREE.LineSegments) &&
         !(child instanceof THREE.Line)
       ) {
         targets.push(child);
       }
     });
+    return targets;
+  }
 
-    const hits = this.raycaster.intersectObjects(targets, false);
-    if (hits.length === 0) return;
+  // Thin, dim outline around every clickable mesh -- small or thin parts are
+  // otherwise easy to miss entirely, since there's no visual cue for where
+  // the actual click target is until you find it by trial and error.
+  _createTargetBorders() {
+    this._removeTargetBorders();
+    for (const mesh of this._getEligibleTargets()) {
+      try {
+        const border = new THREE.BoxHelper(mesh, 0x888888);
+        border.material.transparent = true;
+        border.material.opacity = 0.35;
+        border.userData.volareHelper = true;
+        this.scene.add(border);
+        this._targetBorders.set(mesh, border);
+      } catch (_) {}
+    }
+  }
 
-    this._inspectMesh(hits[0].object);
+  _removeTargetBorders() {
+    for (const border of this._targetBorders.values()) {
+      border.parent?.remove(border);
+      border.geometry?.dispose();
+      border.material?.dispose();
+    }
+    this._targetBorders.clear();
+  }
+
+  _raycastFromEvent(e) {
+    const rect = this.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    this.raycaster.setFromCamera(mouse, this.camera);
+    return this.raycaster.intersectObjects(this._getEligibleTargets(), false);
+  }
+
+  // Brightens the border of whichever mesh the cursor is over/near (a hit
+  // against its own bounding box counts, not just its actual triangles --
+  // the border itself is the generous hit target).
+  _onMouseMove(e) {
+    if (!this.isActive) return;
+    const nextHovered = this._boxHitTargets(e)[0] || null;
+
+    if (nextHovered === this._hoveredMesh) return;
+
+    if (this._hoveredMesh) {
+      const prevBorder = this._targetBorders.get(this._hoveredMesh);
+      if (prevBorder) { prevBorder.material.color.set(0x888888); prevBorder.material.opacity = 0.35; }
+    }
+    this._hoveredMesh = nextHovered;
+    if (nextHovered) {
+      const border = this._targetBorders.get(nextHovered);
+      if (border) { border.material.color.set(0x00ccff); border.material.opacity = 0.9; }
+    }
+    this.domElement.style.cursor = nextHovered ? 'pointer' : '';
+  }
+
+  // Hit-tests each mesh's *bounding box* (not its exact triangles) so hovering
+  // near the border -- not just squarely on filled surface -- still counts,
+  // matching the generous outline drawn around it.
+  _boxHitTargets(e) {
+    const rect = this.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    this.raycaster.setFromCamera(mouse, this.camera);
+    const box = new THREE.Box3();
+    const hits = [];
+    for (const mesh of this._targetBorders.keys()) {
+      box.setFromObject(mesh);
+      if (this.raycaster.ray.intersectsBox(box)) hits.push(mesh);
+    }
+    if (hits.length <= 1) return hits;
+    // Multiple overlapping boxes: prefer the one the ray actually hits closer to.
+    const point = new THREE.Vector3();
+    hits.sort((a, b) => {
+      const boxA = new THREE.Box3().setFromObject(a);
+      const boxB = new THREE.Box3().setFromObject(b);
+      const da = this.raycaster.ray.intersectBox(boxA, point) ? point.distanceTo(this.raycaster.ray.origin) : Infinity;
+      const db = this.raycaster.ray.intersectBox(boxB, point) ? point.distanceTo(this.raycaster.ray.origin) : Infinity;
+      return da - db;
+    });
+    return hits;
+  }
+
+  _onClick(e) {
+    if (!this.isActive) return;
+    const hits = this._raycastFromEvent(e);
+    const target = hits[0]?.object || this._boxHitTargets(e)[0];
+    if (!target) return;
+    this._inspectMesh(target);
   }
 
   _inspectMesh(mesh) {
@@ -204,6 +295,13 @@ export class MeshAnalysis {
   }
 
   updateRealtime() {
+    for (const [mesh, border] of this._targetBorders) {
+      if (mesh.isSkinnedMesh) {
+        if (mesh.boundingBox !== undefined) mesh.boundingBox = null;
+        if (mesh.boundingSphere !== undefined) mesh.boundingSphere = null;
+      }
+      border.update?.();
+    }
     if (!this.highlightMesh) return;
     if (this.selectedMesh?.isSkinnedMesh) {
       if (this.selectedMesh.boundingBox !== undefined) this.selectedMesh.boundingBox = null;

@@ -7,9 +7,8 @@ import { UVViewer } from "../Analysis/UVPreviewTool.js";
 import { PerformanceMonitor } from "../Analysis/PerformanceTool.js";
 import { DirectorMode } from "../Interaction/DirectorMode.js";
 import { TurntablePlus } from "../Interaction/TurntablePlus.js";
-import { PolygonCounter } from "../Analysis/PolygonCounter.js";
-import { TextureAnalyzer } from "../Analysis/TextureAnalyzerTool.js";
 import { MaterialInspector } from "../Analysis/MaterialInspectorTool.js";
+import { computeModelStats } from "../Analysis/ModelStats.js";
 import { DOM_IDS, DOM_CLASSES } from '../UI/ViewerUIController.js';
 
 export class AnalysisManager {
@@ -35,8 +34,6 @@ export class AnalysisManager {
     this.materialManager = materialManager;
     // Initialize all analysis systems
     this.LightingPreset = new LightingPreset(scene, renderer);
-    this.polygonCounter = new PolygonCounter();
-    this.textureAnalyzer = new TextureAnalyzer();
     this.crossSection = new CrossSection(scene, renderer);
     this.meshAnalysis = new MeshAnalysis(scene, camera, controls, renderer?.domElement || domElement);
     this.meshInspector = this.meshAnalysis;
@@ -79,14 +76,27 @@ export class AnalysisManager {
     this._animationManager = mgr;
   }
 
+  // Director Mode: the cinematic sequence runs alongside the model's own
+  // animation, but a deliberately-paused animation must stay paused -- only
+  // start it from a fully-stopped state, never force-resume.
   _saveAndPlayAnimation() {
     const mgr = this._animationManager;
     if (!mgr || !mgr.animations?.length) return;
     this._savedAnimState = { wasPlaying: mgr.isPlaying, wasPaused: mgr.isPaused };
     if (!mgr.isPlaying && !mgr.isPaused) {
       mgr.playAnimation(mgr.currentAnimationIndex || 0);
-    } else if (mgr.isPaused) {
-      mgr.resumeAnimations();
+    }
+  }
+
+  // Turntable: a spinning still model reads better than a running animation
+  // fighting the rotation, so pause it (if it was actually playing) for the
+  // duration and resume on deactivate.
+  _saveAndPauseAnimation() {
+    const mgr = this._animationManager;
+    if (!mgr || !mgr.animations?.length) return;
+    this._savedAnimState = { wasPlaying: mgr.isPlaying, wasPaused: mgr.isPaused };
+    if (mgr.isPlaying && !mgr.isPaused) {
+      mgr.pauseAnimations();
     }
   }
 
@@ -94,11 +104,12 @@ export class AnalysisManager {
     const mgr = this._animationManager;
     const saved = this._savedAnimState;
     if (!mgr || !saved) { this._savedAnimState = null; return; }
-    if (!saved.wasPlaying && !saved.wasPaused) {
+    if (saved.wasPlaying && !saved.wasPaused) {
+      mgr.resumeAnimations();
+    } else if (!saved.wasPlaying && !saved.wasPaused) {
       mgr.stopAllAnimations();
-    } else if (saved.wasPaused) {
-      mgr.pauseAnimations();
     }
+    // saved.wasPaused: leave it paused, no action needed.
     this._savedAnimState = null;
   }
 
@@ -114,9 +125,9 @@ export class AnalysisManager {
     });
   }
 
-  safeToolCall(tool, method, label = 'tool') {
+  safeToolCall(tool, method, label = 'tool', ...args) {
     try {
-      return tool?.[method]?.();
+      return tool?.[method]?.(...args);
     } catch (error) {
       console.warn(`[AnalysisManager] ${label}.${method} failed:`, error);
       return undefined;
@@ -167,8 +178,6 @@ export class AnalysisManager {
 
     if (this.directorMode?.setModel) this.directorMode.setModel(model);
     if (this.turntablePlus?.setModel) this.turntablePlus.setModel(model);
-    if (this.polygonCounter?.setModel) this.polygonCounter.setModel(model);
-    if (this.textureAnalyzer?.setModel) this.textureAnalyzer.setModel(model);
     if (this.materialInspector?.setModel) this.materialInspector.setModel(model);
     if (this.vertexSelector?.invalidateCache) this.vertexSelector.invalidateCache();
   }
@@ -188,17 +197,16 @@ export class AnalysisManager {
   analyzeModel(model) {
     if (!model) return null;
 
-    const analysis = {
-      polygons: this.polygonCounter.analyze(model),
-      textures: this.textureAnalyzer.analyzeModel(model),
+    return {
+      stats: computeModelStats(model, { renderer: this.renderer, animationManager: this._animationManager }),
       timestamp: new Date().toISOString()
     };
-
-    return analysis;
   }
 
-  // Update systems that need frame updates
-  update() {
+  // Update systems that need frame updates. deltaTime (seconds) comes straight
+  // from the render loop's clock -- directorMode and turntablePlus need it for
+  // framerate-independent motion; everything else here is unaffected by it.
+  update(deltaTime) {
     if (this.disposed) return;
 
     if (this.renderer && this.scene && this.performanceMonitor?.isActive) {
@@ -209,6 +217,11 @@ export class AnalysisManager {
     if (this.normalVectorVisualizer?.isActive) this.safeToolCall(this.normalVectorVisualizer, 'updateRealtime', 'normalVectorVisualizer');
     if (this.crossSection?.isActive) this.safeToolCall(this.crossSection, 'updateRealtime', 'crossSection');
     if (this.vertexSelector?.isActive) this.safeToolCall(this.vertexSelector, 'updateRealtime', 'vertexSelector');
+    // Both tools drive their own camera/model motion from this single tick
+    // instead of an independent requestAnimationFrame loop -- see the comment
+    // on DirectorMode.update() for why a second loop caused visible stutter.
+    if (this.directorMode?.isActive) this.safeToolCall(this.directorMode, 'update', 'directorMode', deltaTime);
+    if (this.turntablePlus?.isActive) this.safeToolCall(this.turntablePlus, 'update', 'turntablePlus', deltaTime);
   }
 
   // Clean up all systems
@@ -230,7 +243,7 @@ export class AnalysisManager {
     this.disposeTool(this.turntablePlus, 'turntablePlus');
     this.disposeTool(this.materialInspector, 'materialInspector');
     this.disposeTool(this.performanceMonitor, 'performanceMonitor');
-    this.clearToolButtonStates();
+    this.clearToolButtonStates({ force: true });
   }
   getActiveToolNames() {
     const names = [];
@@ -251,16 +264,21 @@ export class AnalysisManager {
     if (this.normalVectorVisualizer?.markDirty) this.normalVectorVisualizer.markDirty();
   }
 
-  clearToolButtonStates() {
-      this.toolButtonMappings?.forEach(({ button }) => {
-        button.classList.remove(DOM_CLASSES.ACTIVE);
+  // Syncs every tool button to its tool's real state instead of blanket-clearing:
+  // the camera modes (turntable/director) survive other tools being activated, so
+  // their buttons have to stay lit. `force` clears everything regardless, for dispose().
+  clearToolButtonStates({ force = false } = {}) {
+      const state = (tool) => !force && !!tool?.isActive;
+      this.toolButtonMappings?.forEach(({ button }, tool) => {
+        button.classList.toggle(DOM_CLASSES.ACTIVE, state(tool));
       });
-      this._uvButton?.classList.remove(DOM_CLASSES.ACTIVE);
-      this._normalsButton?.classList.remove(DOM_CLASSES.ACTIVE);
-      this._meshAnalysisElements.forEach(el => el.classList.remove(DOM_CLASSES.ACTIVE));
+      this._uvButton?.classList.toggle(DOM_CLASSES.ACTIVE, state(this.uvViewer));
+      this._normalsButton?.classList.toggle(DOM_CLASSES.ACTIVE, state(this.normalVectorVisualizer));
+      const meshActive = state(this.vertexSelector);
+      this._meshAnalysisElements.forEach(el => el.classList.toggle(DOM_CLASSES.ACTIVE, meshActive));
       // Performance monitor is sticky — only clear its button when the tool is actually inactive
       if (this._perfButton) {
-        this._perfButton.classList.toggle(DOM_CLASSES.ACTIVE, !!this.performanceMonitor?.isActive);
+        this._perfButton.classList.toggle(DOM_CLASSES.ACTIVE, state(this.performanceMonitor));
       }
   }
 
@@ -269,16 +287,33 @@ export class AnalysisManager {
       this.syncToolButtonStates?.();
   }
 
-  deactivateAllTools() {
+  // Camera modes drive the camera/model transform rather than drawing an overlay,
+  // so they compose with every other tool. Only another camera mode (or a model
+  // swap / full reset) turns them off.
+  get cameraModes() {
+      return [[this.directorMode, 'directorMode'], [this.turntablePlus, 'turntablePlus']];
+  }
+
+  deactivateCameraModes() {
+      this.cameraModes.forEach(([tool, label]) => {
+        if (!tool?.isActive) return;
+        this.safeToolCall(tool, 'deactivate', label);
+        // Camera modes own the saved animation state, so their mapped
+        // onDeactivate has to run even when they're turned off from here.
+        try { this.toolButtonMappings?.get(tool)?.options?.onDeactivate?.(); }
+        catch (error) { console.warn(`[AnalysisManager] ${label} onDeactivate failed:`, error); }
+      });
+  }
+
+  deactivateAllTools({ keepCameraModes = false } = {}) {
       this.clearPendingToolActivations();
       this.safeToolCall(this.boundingVolumeVisualizer, 'deactivate', 'boundingVolumeVisualizer');
       this.safeToolCall(this.normalVectorVisualizer, 'deactivate', 'normalVectorVisualizer');
       this.safeToolCall(this.crossSection, 'deactivate', 'crossSection');
       this.safeToolCall(this.vertexSelector, 'deactivate', 'vertexSelector');
       this.safeToolCall(this.uvViewer, 'close', 'uvViewer');
-      this.safeToolCall(this.directorMode, 'deactivate', 'directorMode');
-      this.safeToolCall(this.turntablePlus, 'deactivate', 'turntablePlus');
       this.safeToolCall(this.materialInspector, 'deactivate', 'materialInspector');
+      if (!keepCameraModes) this.deactivateCameraModes();
       this.clearToolButtonStates();
   }
   setupAdvancedUIEvents() {
@@ -303,17 +338,20 @@ export class AnalysisManager {
           btn.classList.remove(DOM_CLASSES.ACTIVE);
           if (options.onDeactivate) options.onDeactivate();
         } else {
-          this.deactivateAllTools();
+          // A camera mode replaces the other camera mode; anything else leaves
+          // whichever camera mode is running alone.
+          this.deactivateAllTools({ keepCameraModes: !options.cameraMode });
           document.querySelectorAll(`.${DOM_CLASSES.TOOL_TOGGLE}, .vlr-advanced-btn`).forEach(b => b.classList.remove(DOM_CLASSES.ACTIVE));
-          if (this._perfButton && this.performanceMonitor?.isActive) {
-            this._perfButton.classList.add(DOM_CLASSES.ACTIVE);
-          }
+          // Re-light what survived the blanket clear (camera modes, sticky perf monitor).
+          this.clearToolButtonStates();
           const timer = setTimeout(() => {
             this.pendingToolTimers.delete(timer);
             if (this.disposed) return;
             this.safeToolCall(tool, 'activate', id);
             btn.classList.add(DOM_CLASSES.ACTIVE);
             if (options.onActivate) options.onActivate();
+            // Tuck the toolkit away so the viewport is clear for the tool.
+            this.notifyVisualToolkit('visualizer-open');
           }, 50);
           this.pendingToolTimers.add(timer);
         }
@@ -369,12 +407,14 @@ export class AnalysisManager {
       this.refreshToolButtonStates();
     };
     toggleButton(DOM_IDS.TOGGLE_TURNTABLE_PLUS, this.turntablePlus, {
-      onActivate: () => this._saveAndPlayAnimation(),
+      cameraMode: true,
+      onActivate: () => this._saveAndPauseAnimation(),
       onDeactivate: () => this._restoreAnimationState()
     });
     toggleButton(DOM_IDS.TOGGLE_BOUNDING_VOLUMES, this.boundingVolumeVisualizer);
     toggleButton(DOM_IDS.TOGGLE_CROSS_SECTION, this.crossSection);
     toggleButton(DOM_IDS.TOGGLE_DIRECTOR_MODE, this.directorMode, {
+      cameraMode: true,
       onActivate: () => this._saveAndPlayAnimation(),
       onDeactivate: () => this._restoreAnimationState()
     });
@@ -393,11 +433,9 @@ export class AnalysisManager {
         this.safeToolCall(this.normalVectorVisualizer, 'deactivate', 'normalVectorVisualizer');
         normalsBtn.classList.remove(DOM_CLASSES.ACTIVE);
       } else {
-        this.deactivateAllTools();
+        this.deactivateAllTools({ keepCameraModes: true });
         document.querySelectorAll('.tool-toggle, .vlr-advanced-btn').forEach(b => b.classList.remove(DOM_CLASSES.ACTIVE));
-        if (this._perfButton && this.performanceMonitor?.isActive) {
-          this._perfButton.classList.add(DOM_CLASSES.ACTIVE);
-        }
+        this.clearToolButtonStates();
         normalToggleTimeout = setTimeout(() => {
           if (this.disposed) return;
           this.safeToolCall(this.normalVectorVisualizer, 'activate', 'normalVectorVisualizer');
@@ -511,19 +549,20 @@ export class AnalysisManager {
 
   updateAnalysisResults(analysis) {
     const resultsDiv = document.getElementById('analysis-results');
-    if (!resultsDiv || !analysis) return;
+    const s = analysis?.stats;
+    if (!resultsDiv || !s) return;
 
     resultsDiv.textContent = '';
     const h4 = document.createElement('h4');
     h4.textContent = 'Model Statistics';
     resultsDiv.appendChild(h4);
-    const stats = [
-      ['Triangles', analysis.polygons.triangles.toLocaleString()],
-      ['Vertices',  analysis.polygons.vertices.toLocaleString()],
-      ['Materials', analysis.polygons.materials],
-      ['Unique Textures', analysis.polygons.textures],
+    const rows = [
+      ['Triangles', s.triangleCount.toLocaleString()],
+      ['Vertices', s.vertexCount.toLocaleString()],
+      ['Materials', s.materialCount],
+      ['Unique Textures', s.textureCount],
     ];
-    for (const [label, val] of stats) {
+    for (const [label, val] of rows) {
       const p = document.createElement('p');
       p.textContent = `${label}: ${val}`;
       resultsDiv.appendChild(p);

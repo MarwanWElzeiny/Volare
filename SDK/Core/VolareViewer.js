@@ -1,6 +1,5 @@
 import '../Utils/ssrGlobalsShim.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { WebGPURenderer } from 'three/webgpu';
 
 import { AnalysisManager } from "../Managers/AnalysisController.js";
@@ -8,10 +7,12 @@ import { AnimationManager } from "../Managers/AnimationController.js";
 import { LightingManager } from '../Managers/LightingController.js';
 import { VolareManager } from '../Managers/ModelLoaderManager.js';
 import { MaterialManager } from "../Managers/MaterialController.js";
+import { computeModelStats as computeSharedModelStats } from "../Analysis/ModelStats.js";
 import { UIManager } from "../UI/ViewerUIController.js";
 import { ButtonManager } from "../UI/ViewerUIController.js";
 import { getToolkitPanelsHTML, VolareDOMManager, VolareCanvas } from "../UI/ViewerUIController.js";
 import Debouncer from "../Utils/Debouncer.js";
+import { showTopToast } from "../UI/TopToast.js";
 
 import * as THREE from 'three';
 
@@ -73,7 +74,8 @@ class VolareViewerInit {
     this.camera = null;
     this.renderer = null;
     this.controls = null;
-    this.clock = new THREE.Clock();
+    this.clock = new THREE.Timer();
+    this.clock.connect(document);
     this.debounce = Debouncer;
 
     // State management
@@ -87,11 +89,10 @@ class VolareViewerInit {
     this.currentIndex = 0;
     this.initialized = false;
     this.modelLoaded = false;
+    this._modelHasAnimations = false;
     this.hdriLoaded = false;
     this.hdriEnabled = true;
 
-    this.manager = new THREE.LoadingManager();
-    this.hdrLoader = new RGBELoader();
     // Plugin managers
     this.lightingManager = null;
     this.volareManager = null;
@@ -110,6 +111,11 @@ class VolareViewerInit {
     this._cachedRootBoneModelId = null;
     this._firstRenderDone = false;
     this.defaultEnvironmentPath = this.options.defaultHdri || 'lonely-road-afternoon';
+    // Shared, interruptible camera transition -- see _startCameraMove(). Used
+    // by centerCameraOnModel(), resetCamera(), and engaging Follow Model so
+    // none of them instantly teleport the camera.
+    this._cameraMove = null;
+    this._cameraMoveControlsWereEnabled = true;
 
     this.init();
 
@@ -367,7 +373,6 @@ class VolareViewerInit {
     this.meshAnalysis = tools?.meshAnalysis || tools?.meshInspector || tools?.vertexSelector || null;
     this.meshInspector = this.meshAnalysis;
     this.vertexSelector = this.meshAnalysis;
-    this.textureAnalyzer = tools?.textureAnalyzer || null;
     this.normalVisualizer = tools?.normalVectorVisualizer || null;
     this.uvViewer = tools?.uvViewer || null;
     this.crossSection = tools?.crossSection || null;
@@ -377,59 +382,7 @@ class VolareViewerInit {
   }
 
   computeModelStats(model) {
-    if (!model) return null;
-    let vertexCount = 0, triangleCount = 0, meshCount = 0;
-    const materials = new Set();
-    const textures = new Set();
-    const box = new THREE.Box3();
-
-    model.traverse(child => {
-      if (!child.isMesh) return;
-      // Skip wireframe/helper meshes added by Volare tools
-      if (child.userData?.volareHelper || child.userData?.isWireframeHelper) return;
-      meshCount++;
-      const geo = child.geometry;
-      const pos = geo?.attributes?.position;
-      if (pos) vertexCount += pos.count;
-      if (geo?.index) {
-        triangleCount += geo.index.count / 3;
-      } else if (pos) {
-        triangleCount += pos.count / 3;
-      }
-      if (child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => {
-          materials.add(m);
-          Object.keys(m).forEach(k => {
-            if (m[k]?.isTexture) textures.add(m[k]);
-          });
-        });
-      }
-    });
-
-    // Compute bounding box from model meshes only, excluding Volare helpers
-    box.makeEmpty();
-    model.traverse(child => {
-      if (!child.isMesh) return;
-      if (child.userData?.volareHelper || child.userData?.isWireframeHelper) return;
-      if (!child.geometry) return;
-      child.updateMatrixWorld(true);
-      const childBox = new THREE.Box3().setFromObject(child);
-      box.union(childBox);
-    });
-    if (box.isEmpty()) box.setFromObject(model);
-    const sphere = new THREE.Sphere();
-    box.getBoundingSphere(sphere);
-
-    return {
-      vertexCount: Math.round(vertexCount),
-      triangleCount: Math.round(triangleCount),
-      meshCount,
-      materialCount: materials.size,
-      textureCount: textures.size,
-      boundingBox: { min: box.min.toArray(), max: box.max.toArray() },
-      boundingSphere: { center: sphere.center.toArray(), radius: sphere.radius }
-    };
+    return computeSharedModelStats(model, { renderer: this.renderer, animationManager: this.animationManager });
   }
 
   classifyModelSize(stats) {
@@ -552,6 +505,7 @@ class VolareViewerInit {
         materialButtons: ['vlr-original-wire', 'vlr-ao-wire', 'Wireframe'],
         hdriOff: 'vlr-hdri-off',
         resetToggle: 'vlr-reset-toggle',
+        resetCamera: 'vlr-reset-camera',
         centerCamera: 'vlr-center-camera',
         meshRotationSlider: 'meshRotationSlider',
         animationPanel: 'animation-panel',
@@ -560,7 +514,13 @@ class VolareViewerInit {
         modelContainer: 'model'
       }
     };
-    return { ...defaults, ...userOptions };
+    const merged = { ...defaults, ...userOptions };
+    for (const key of ['performance', 'renderer', 'selectors', 'initialCameraPosition']) {
+      if (userOptions[key] && typeof userOptions[key] === 'object' && !Array.isArray(userOptions[key])) {
+        merged[key] = { ...defaults[key], ...userOptions[key] };
+      }
+    }
+    return merged;
   }
 
   setupEventListeners() {
@@ -603,8 +563,15 @@ class VolareViewerInit {
       this.addTrackedEventListener(thumbnail, 'click', () => {
         this.selectedModelPath = thumbnail.getAttribute('data-model');
         this.currentIndex = index;
+        const hdriPath = thumbnail.getAttribute('data-hdri');
         if (this.selectedModelPath) {
-          this.loadModel(this.selectedModelPath);
+          this.loadModel(this.selectedModelPath).then(() => {
+            if (hdriPath) {
+              this.setEnvironment(hdriPath);
+            } else {
+              this.setEnvironment({ preset: this.defaultEnvironmentPath });
+            }
+          });
         }
       });
     });
@@ -659,7 +626,23 @@ class VolareViewerInit {
       this.buttonManager?.applyCooldownToGroup(['vlr-original-wire', 'vlr-ao-wire', 'Wireframe', 'vlr-reset-toggle', 'vlr-center-camera'], 1000);
     });
 
+    // Camera-only reset: framing back to default, nothing else touched (unlike
+    // #vlr-reset-toggle, which resets materials/HDRI/tools too).
+    this.addTrackedEventListener(document.getElementById(this.options.selectors.resetCamera), 'click', () => {
+      try {
+        this.setFollowModel(false);
+        this.resetCamera();
+      } catch (error) {
+        console.warn('[Volare] Reset camera failed:', error);
+      }
+      this.buttonManager?.applyCooldownToGroup(['vlr-reset-camera', 'vlr-reset-toggle', 'vlr-center-camera'], 1000);
+    });
+
     this.addTrackedEventListener(document.getElementById(this.options.selectors.centerCamera), 'click', () => {
+      if (!this._modelHasAnimations) {
+        showTopToast('Follow Model', 'This model has no animations.', 3000);
+        return;
+      }
       this.toggleFollowModel();
       this.buttonManager?.applyCooldownToGroup(['vlr-original-wire', 'vlr-ao-wire', 'Wireframe', 'vlr-reset-toggle', 'vlr-center-camera'], 1000);
     });
@@ -707,6 +690,7 @@ class VolareViewerInit {
     this.renderer.setAnimationLoop(() => {
       if (this.disposed || !this.scene || !this.camera) return;
 
+      this.clock.update();
       const deltaTime = this.clock.getDelta();
       this.pluginManager?.runSync?.('beforeRender', this, { deltaTime });
 
@@ -717,12 +701,15 @@ class VolareViewerInit {
 
       this.updateFollowModelTarget();
 
-      // Update controls
-      this.controls?.update?.();
+      // A camera transition (centerCameraOnModel/resetCamera/Follow-engage)
+      // in progress calls controls.update() itself, so the plain update below
+      // only runs when nothing is driving the camera this frame.
+      this._updateCameraMove(deltaTime);
+      if (!this._cameraMove) this.controls?.update?.();
       this.renderer.render(this.scene, this.camera);
       // Update analysis tools
       if (this.analysisManager && typeof this.analysisManager.update === 'function') {
-        this.analysisManager.update();
+        this.analysisManager.update(deltaTime);
       }
       this.pluginManager?.runSync?.('afterRender', this, { deltaTime });
     });
@@ -747,8 +734,6 @@ class VolareViewerInit {
       if (this.disposed) throw new Error('Cannot load a model after the viewer has been disposed.');
       this.emit('modelLoading', { path: modelPath });
       this._showLoadingOverlay('Loading model...');
-      this._cachedRootBone = null;
-      this._cachedRootBoneModelId = null;
       this.modelLoaded = false;
       this._firstRenderDone = false;
       const model = await this.volareManager.loadModel(modelPath, options);
@@ -765,6 +750,21 @@ class VolareViewerInit {
       }
       this._firstRenderDone = true;
       this._hideLoadingOverlay();
+      this._modelHasAnimations = this.animationManager?.animations?.length > 0;
+      const followBtn = document.getElementById(this.options.selectors.centerCamera);
+      if (this._modelHasAnimations) {
+        this.setFollowModel(true);
+        if (followBtn) {
+          followBtn.classList.remove('disabled');
+          followBtn.style.opacity = '';
+        }
+      } else {
+        this.setFollowModel(false);
+        if (followBtn) {
+          followBtn.classList.add('disabled');
+          followBtn.style.opacity = '0.4';
+        }
+      }
       this.emit('modelLoaded', { path: modelPath, model });
       return model;
     } catch (error) {
@@ -820,16 +820,32 @@ class VolareViewerInit {
     }
   }
 
-  setActiveHdriOption(hdriPath) {
+  // hdriPath omitted (or explicitly null, e.g. resetView()'s "Reset All
+  // Settings") falls back to the lighting manager's own record of what's
+  // actually loaded -- the single source of truth -- instead of trusting
+  // whatever string a given call site happens to have on hand. This is what
+  // was actually broken: resetView() passed a literal `null` after resetting
+  // to the default HDRI, which cleared every thumbnail's active state and
+  // restored none, even though a real preset *was* active.
+  setActiveHdriOption(hdriPath = null) {
+    const activeUrl = hdriPath ?? this.lightingManager?.currentEnvironmentUrl;
     document.querySelectorAll('.hdri-option').forEach(option => {
-      option.classList.toggle('active', option.dataset.hdri === hdriPath);
+      option.classList.toggle('active', !!activeUrl && option.dataset.hdri === activeUrl);
     });
     this.syncHdriToggleState();
   }
 
-  setEnvironment(environmentConfig) {
-    const result = this.lightingManager.setEnvironment(environmentConfig);
+  // lightingManager.setEnvironment() is async (it awaits the HDR texture
+  // load before recording currentEnvironmentUrl). Syncing the toolkit state
+  // synchronously right after calling it -- the old code -- ran before that
+  // promise resolved, so every load (including the very first one at
+  // startup) synced against a still-null currentEnvironmentUrl and left the
+  // active card wrong until something else happened to resync it. Awaiting
+  // here means the card state always reflects what's actually loaded.
+  async setEnvironment(environmentConfig) {
+    const result = await this.lightingManager.setEnvironment(environmentConfig);
     this.syncHdriToggleState();
+    this.setActiveHdriOption();
     return result;
   }
 
@@ -914,8 +930,15 @@ class VolareViewerInit {
   }
   handleThumbnailClick(thumbnail, index) {
     const modelPath = thumbnail.getAttribute('data-model');
+    const hdriPath = thumbnail.getAttribute('data-hdri');
     if (modelPath) {
-      this.loadModel(modelPath);
+      this.loadModel(modelPath).then(() => {
+        if (hdriPath) {
+          this.setEnvironment(hdriPath);
+        } else {
+          this.setEnvironment({ preset: this.defaultEnvironmentPath });
+        }
+      });
     }
   }
 
@@ -968,12 +991,59 @@ class VolareViewerInit {
     }
   }
 
+  // Shared camera transition -- used by centerCameraOnModel(), resetCamera(),
+  // and engaging Follow Model, so none of them instantly teleport the camera.
+  // Advanced by _updateCameraMove(deltaTime) from the render loop, the same way
+  // DirectorMode and TurntablePlus are: one per-frame tick, not a private
+  // requestAnimationFrame loop. Starting a new move while one is in flight
+  // reads the CURRENT (already-interpolated) camera position/target as its
+  // start, so it redirects smoothly instead of snapping back to the old target.
+  // controls.enabled is set false for the duration: OrbitControls.update()
+  // re-derives its internal spherical state from camera.position/controls.target
+  // every call, and simultaneous user drag input (which feeds a separate
+  // internal delta) would otherwise fight the lerp.
+  _startCameraMove(targetPos, targetLookAt, duration = 700) {
+    if (!this.camera || !this.controls) return;
+    if (!this._cameraMove) this._cameraMoveControlsWereEnabled = this.controls.enabled;
+    this.controls.enabled = false;
+    this._cameraMove = {
+      startPos: this.camera.position.clone(),
+      targetPos: targetPos.clone(),
+      startTarget: this.controls.target.clone(),
+      targetTarget: targetLookAt.clone(),
+      elapsedMs: 0,
+      duration
+    };
+  }
+
+  _updateCameraMove(deltaTime) {
+    const move = this._cameraMove;
+    if (!move || !deltaTime) return;
+    move.elapsedMs += deltaTime * 1000;
+    const progress = Math.min(move.elapsedMs / move.duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+
+    this.camera.position.lerpVectors(move.startPos, move.targetPos, eased);
+    this.controls.target.lerpVectors(move.startTarget, move.targetTarget, eased);
+    this.controls.update();
+
+    if (progress >= 1) {
+      this._cameraMove = null;
+      this.controls.enabled = this._cameraMoveControlsWereEnabled;
+    }
+  }
+
   centerCameraOnModel() {
     if (!this.camera || !this.camera.fov || !this.currentModel) return;
 
     this.normalizeModelScale(this.currentModel);
 
-    const box = new THREE.Box3().setFromObject(this.currentModel);
+    // precise=true samples actual (possibly skinned/animated) vertex positions
+    // via the mesh's own getVertexPosition() -- SkinnedMesh overrides that to
+    // apply the current bone pose, so this is the current animated bounding
+    // box, not the bind/rest pose. Native three.js behavior, no custom
+    // skinning math needed.
+    const box = new THREE.Box3().setFromObject(this.currentModel, true);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
 
@@ -982,8 +1052,6 @@ class VolareViewerInit {
     let cameraZ = Math.abs(maxDimension / 2 / Math.tan(fov / 2));
     cameraZ *= 1.5;
 
-    this.camera.position.set(center.x, center.y, cameraZ);
-
     const modelRadius = maxDimension / 2;
     this.camera.near = Math.max(0.001, modelRadius * 0.01);
     this.camera.far = Math.max(1000, cameraZ * 10);
@@ -991,8 +1059,7 @@ class VolareViewerInit {
 
     this.controls.minDistance = modelRadius * 0.3;
     this.controls.maxDistance = cameraZ * 5;
-    this.controls.target.copy(center);
-    this.controls.update();
+    this._startCameraMove(new THREE.Vector3(center.x, center.y, cameraZ), center);
     this._followTarget.copy(center);
   }
 
@@ -1003,6 +1070,13 @@ class VolareViewerInit {
     return box.getCenter(new THREE.Vector3());
   }
 
+  // Root-bone world position, not a full-mesh bounding box -- O(1) per frame
+  // (one matrix read) instead of walking every vertex through the skinning
+  // matrix. Cheap enough to call unthrottled every frame, which is what makes
+  // this smooth: a throttled precise box only refreshes every N frames and
+  // the camera visibly jumps to catch up each time it does; an unthrottled
+  // precise box is smooth but the per-vertex walk costs enough to tank FPS on
+  // real models. Tracking the root bone sidesteps both.
   _getFollowPoint(out) {
     if (!this.currentModel) return null;
     if (!out) out = new THREE.Vector3();
@@ -1027,6 +1101,7 @@ class VolareViewerInit {
 
   updateFollowModelTarget() {
     if (!this.followingModel || !this.currentModel || !this.controls || !this.camera) return;
+    if (this._cameraMove) return; // let an in-flight engage/center/reset transition finish first
     const point = this._getFollowPoint(VolareViewerInit._v3A);
     if (!point) return;
     const delta = VolareViewerInit._v3B.copy(point).sub(this._followTarget);
@@ -1037,17 +1112,22 @@ class VolareViewerInit {
   }
 
   setFollowModel(enabled = true) {
+    const wasFollowing = this.followingModel;
     this.followingModel = Boolean(enabled && this.currentModel);
     const button = document.getElementById(this.options.selectors.centerCamera);
     button?.classList.toggle('active', this.followingModel);
     button?.setAttribute('aria-pressed', this.followingModel ? 'true' : 'false');
 
-    if (this.followingModel) {
+    if (this.followingModel && !wasFollowing) {
       const point = this._getFollowPoint() || this.getCurrentModelCenter();
       if (point) {
+        // Preserve the camera's current offset from the target (same delta
+        // continuous per-frame following applies), just eased in over a short
+        // transition instead of snapping straight to it.
+        const delta = point.clone().sub(this._followTarget);
+        const newCamPos = this.camera.position.clone().add(delta);
+        this._startCameraMove(newCamPos, point, 500);
         this._followTarget.copy(point);
-        this.controls.target.copy(point);
-        this.controls.update();
       }
     }
   }
@@ -1057,12 +1137,11 @@ class VolareViewerInit {
   }
 
   resetCamera() {
-    this.camera.position.set(
-      this.options.initialCameraPosition.x,
-      this.options.initialCameraPosition.y,
-      this.options.initialCameraPosition.z
-    );
-    this.controls.reset();
+    // centerCameraOnModel() already fully recomputes position/target/near/far/
+    // min-max-distance and eases into them -- an extra controls.reset() +
+    // instant camera.position.set() first would just be an instant jump that
+    // gets immediately overridden, i.e. exactly the teleport-then-glide
+    // artifact this is meant to eliminate.
     this.centerCameraOnModel();
   }
 
@@ -1072,6 +1151,14 @@ class VolareViewerInit {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event).push(callback);
+    return () => this.off(event, callback);
+  }
+
+  off(event, callback) {
+    const handlers = this.eventHandlers.get(event);
+    if (!handlers) return;
+    const idx = handlers.indexOf(callback);
+    if (idx !== -1) handlers.splice(idx, 1);
   }
 
   emit(event, data) {
@@ -1417,6 +1504,7 @@ class VolareViewer {
     return {
       loadModel: (path) => this.loadModel(path),
       centerCamera: () => this.centerCameraOnModel(),
+      resetCamera: () => this.resetCamera(),
       setEnvironment: (hdriPath) => this.setEnvironment(hdriPath),
       resetView: () => this.resetView(),
       getCurrentModel: () => this.currentModel,

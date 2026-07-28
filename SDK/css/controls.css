@@ -227,15 +227,41 @@
     opacity: 0.85;
 }
 
-/* When an animation bar is present at the bottom, the idle toolkit recedes
-   BEHIND it (z-index below the panel's 1002), dimmed and scaled down a bit, so
-   it reads as an intentional "tucked away" state rather than an awkward
-   overlap. Hover/pointer removes idle-dim (JS) and it springs back to full. */
+/* When an animation bar is present the idle toolkit slides to the bottom
+   (same translateY as the no-animation idle) but also scales down and dims,
+   so it tucks visually behind the panel (z-index below its 1002). */
 #vlr-visual-toolkit.active.vlr-toolkit-idle-dim:not(.vlr-toolkit-inspector-dim):not(.vlr-toolkit-mesh-pending):has(~ #animation-panel.vlr-anim-active) {
-    transform: scale(0.9);
+    transform: translateY(calc(100% - 64px)) scale(0.92);
     transform-origin: bottom center;
     opacity: 0.35;
     z-index: 1000;
+}
+
+/* Minimized: JS adds this when animation panel opens or a visualizer tool
+   activates. Same slide-down + dim as idle-dim but applied instantly via the
+   class (no timer). Keeps .active so pointer-events:all is inherited. */
+#vlr-visual-toolkit.active.vlr-toolkit-minimized {
+    transform: translateY(calc(100% - 64px)) scale(0.92);
+    transform-origin: bottom center;
+    opacity: 0.35;
+    z-index: 1000;
+    pointer-events: all;
+}
+
+/* Tucked: when the toolkit is closed (or a tool minimized it), it slides down
+   behind the animation panel — dimmed, scaled back, just a strip of its top
+   edge showing. Hovering that strip or the toolkit-toggle restores it (JS).
+   The .vlr-toolkit-tucked class is added by JS alongside removing .active,
+   so the base rule's opacity:0/blur/pointer-events:none is cleanly overridden
+   without !important wars. Neutralised on <=1400px in responsive.css. */
+#vlr-visual-toolkit.vlr-toolkit-tucked {
+    opacity: 0.35;
+    filter: none;
+    transform: translateY(calc(100% - 34px)) scale(0.92);
+    transform-origin: bottom center;
+    z-index: 1000;
+    pointer-events: all;
+    cursor: pointer;
 }
 
 /* Mesh Inspector / Material Inspector active: fully hidden + unclickable */

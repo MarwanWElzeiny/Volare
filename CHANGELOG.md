@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (2026-07-10)
+## 1.0.0 (2026-07-28)
 
 ### Restructure for Public Release
 - Reorganized project: `SDK/` (CSS + JS), `DEMO/`

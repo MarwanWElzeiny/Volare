@@ -429,10 +429,7 @@ class UIManager {
     this.buttonManager
       .registerButton('vlr-center-camera', {
         theme: 'secondary',
-        cooldown: 500,
-        callbacks: {
-          onClick: (id) => this.handleCameraReset()
-        }
+        cooldown: 500
       })
 
   }
@@ -617,6 +614,10 @@ function getModelAttributesHTML() {
     <div class="vlr-model-attr-main">
       <div class="vlr-model-attr-back-tab">
         <div class="vlr-model-attr-container">
+          <span class="vlr-model-attr-back vlr-model-attributes vlr-reset-camera" id="vlr-reset-camera">
+            <i class="fa-solid fa-camera-rotate vlr-model-attr"></i>
+            <h4 class="vlr-model-attr-text">Reset Camera</h4>
+          </span>
           <span class="vlr-model-attr-back vlr-model-attributes vlr-reset-toggle" id="vlr-reset-toggle">
             <i class="fa-solid fa-arrow-rotate-right vlr-model-attr Lighting"></i>
             <h4 class="vlr-model-attr-text">Reset All Settings</h4>
@@ -888,7 +889,7 @@ class VolareCanvas {
 
     if (visualToolkit?.classList.contains('active')) {
       this.showVisualToolkit();
-      this.scheduleVisualToolkitIdleDim(5000);
+      this.scheduleVisualToolkitIdleDim(3000);
     } else {
       this.clearVisualToolkitIdleTimer();
       this.resetVisualToolkitTransientState();
@@ -921,6 +922,7 @@ class VolareCanvas {
     const visualToolkit = this.getVisualToolkitElement();
     if (!visualToolkit?.classList.contains('active')) return;
     if (this.visualToolkitHovered || this.visualToolkitMeshPending) return;
+    if (this.isVisualToolkitMinimized()) return;
     visualToolkit.classList.add('vlr-toolkit-idle-dim');
   }
 
@@ -928,6 +930,8 @@ class VolareCanvas {
     this.clearVisualToolkitIdleTimer();
     const visualToolkit = this.getVisualToolkitElement();
     if (!visualToolkit?.classList.contains('active')) return;
+    // Minimized is a deliberate state -- the idle peek must not fight it.
+    if (this.isVisualToolkitMinimized()) return;
     this.visualToolkitIdleTimer = setTimeout(() => {
       this.visualToolkitIdleTimer = null;
       this.dimVisualToolkitForIdle();
@@ -960,20 +964,55 @@ class VolareCanvas {
       'vlr-toolkit-idle-dim',
       'vlr-toolkit-inspector-dim',
       'vlr-toolkit-mesh-pending',
-      'vlr-toolkit-disabled'
+      'vlr-toolkit-disabled',
+      // Closing the toolkit clears the minimized state too, so reopening is normal.
+      'vlr-toolkit-minimized'
     );
     this.visualToolkitHovered = false;
     this.visualToolkitMeshPending = false;
     this.visualToolkitMeshSelected = false;
   }
 
+  /**
+   * Tuck the toolkit down behind the animation panel instead of closing it, so a
+   * strip of its top edge stays visible/clickable to bring it back. Stays 'active'
+   * -- only the vlr-toolkit-minimized class moves it (see controls.css).
+   */
   minimizeVisualToolkit() {
     const visualToolkit = this.getVisualToolkitElement();
-    visualToolkit?.classList.remove('active');
+    if (!visualToolkit?.classList.contains('active')) return;
     document.getElementById('vlr-advanced-three')?.classList.remove('active');
     document.body.classList.remove('volare-advanced-open');
     this.clearVisualToolkitIdleTimer();
-    this.resetVisualToolkitTransientState();
+    // Only the idle peek is cleared here -- the inspector/mesh dim states are set
+    // by the same activation and must survive; they layer on top of minimized and
+    // lift on their own close event, leaving the toolkit tucked.
+    visualToolkit.classList.remove('vlr-toolkit-idle-dim');
+    this.visualToolkitHovered = false;
+    visualToolkit.classList.add('vlr-toolkit-minimized');
+  }
+
+  /**
+   * Bring the toolkit back from either tucked state -- minimized (a tool pushed it
+   * away) or simply closed. Returns false when it was already open, so callers can
+   * fall through to their normal toggle behaviour.
+   */
+  restoreVisualToolkit() {
+    const visualToolkit = this.getVisualToolkitElement();
+    if (!visualToolkit || visualToolkit.hidden) return false;
+    const wasTucked = visualToolkit.classList.contains('vlr-toolkit-minimized')
+      || !visualToolkit.classList.contains('active');
+    if (!wasTucked) return false;
+    visualToolkit.classList.remove('vlr-toolkit-minimized');
+    visualToolkit.classList.add('active');
+    document.body.classList.add('volare-advanced-open');
+    this.initResponsiveTabs();
+    this.initHdriSwiper();
+    return true;
+  }
+
+  isVisualToolkitMinimized() {
+    return Boolean(this.getVisualToolkitElement()?.classList.contains('vlr-toolkit-minimized'));
   }
 
   handleVisualToolkitEvent(event) {
@@ -1010,6 +1049,9 @@ class VolareCanvas {
         // interactive, but stay dimmed via inspector-dim until the inspector closes.
         this.visualToolkitMeshSelected = true;
         this.setVisualToolkitMeshPending(false);
+        break;
+      case 'animation-panel-open':
+        this.minimizeVisualToolkit();
         break;
       case 'model-stats-ready':
         this.visualToolkitStatsReady = true;
@@ -1115,6 +1157,12 @@ class VolareCanvas {
 
     if (toolkitToggle) {
       this.addEventListener(toolkitToggle, 'click', () => {
+        // While minimized the toolkit is still 'active', so the toggle must pop it
+        // back up rather than toggling it off into a hidden-but-minimized state.
+        if (this.restoreVisualToolkit()) {
+          this.syncAdvancedOpenState();
+          return;
+        }
         if (visualToolkit) {
           visualToolkit.classList.toggle('active');
           if (visualToolkit.classList.contains('active')) {
@@ -1132,6 +1180,12 @@ class VolareCanvas {
       this.addEventListener(visualToolkit, 'mouseenter', () => {
         this.visualToolkitHovered = true;
         this.clearVisualToolkitIdleTimer();
+        // Hovering the tucked strip is the way back in -- see the tucked-state
+        // rules in controls.css. Desktop only; touch never fires mouseenter.
+        if (this.restoreVisualToolkit()) {
+          this.syncAdvancedOpenState();
+          return;
+        }
         if (!this.visualToolkitMeshPending) this.showVisualToolkit();
       });
 
@@ -1141,10 +1195,15 @@ class VolareCanvas {
       });
 
       this.addEventListener(visualToolkit, 'pointerdown', () => {
+        // Clicking the peek strip of a minimized toolkit brings it back.
+        if (this.restoreVisualToolkit()) {
+          this.syncAdvancedOpenState();
+          return;
+        }
         this.visualToolkitHovered = true;
         this.clearVisualToolkitIdleTimer();
         if (!this.visualToolkitMeshPending) this.showVisualToolkit();
-        this.scheduleVisualToolkitIdleDim(5000);
+        this.scheduleVisualToolkitIdleDim(3000);
       });
     }
 

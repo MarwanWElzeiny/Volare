@@ -47,6 +47,8 @@ function showTopToast(title, message, duration = null) {
 
   toastElement.querySelector("h1").textContent = title;
   toastElement.querySelector("span").textContent = message;
+  toastElement.classList.remove("top-toast-show");
+  void toastElement.offsetHeight;
   toastElement.classList.add("top-toast-show");
 
   clearTimeout(toastTimeout);

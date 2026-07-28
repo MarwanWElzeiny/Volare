@@ -1,5 +1,24 @@
 import { showTopToast } from '../UI/TopToast.js';
 
+// Tightly-packed, de-interleaved, denormalized copy of a BufferAttribute /
+// InterleavedBufferAttribute, safe to hand to a Worker. See the comment at the
+// _processWithWorker call site for why this can't be `attribute.array.slice()`.
+function packAttribute(attribute, itemSize) {
+  const out = new Float32Array(attribute.count * itemSize);
+  for (let i = 0; i < attribute.count; i++) {
+    out[i * itemSize] = attribute.getX(i);
+    if (itemSize > 1) out[i * itemSize + 1] = attribute.getY(i);
+    if (itemSize > 2) out[i * itemSize + 2] = attribute.getZ(i);
+  }
+  return out;
+}
+
+function packIndex(indexAttribute) {
+  const out = new Uint32Array(indexAttribute.count);
+  for (let i = 0; i < indexAttribute.count; i++) out[i] = indexAttribute.getX(i);
+  return out;
+}
+
 // Type definitions
 const UVEventType = {
   PROCESSING_START: 'processing_start',
@@ -41,13 +60,26 @@ class UVShellDetector {
            Math.abs(uv1.y - uv2.y) < this.uvTolerance;
   }
 
-  _edgeKey(vertA, vertB, uvA, uvB) {
+  // posA/posB are position-VALUE keys (see _posKey), not raw vertex indices.
+  // Non-indexed geometry gives every triangle its own synthetic per-triangle
+  // index (i*3, i*3+1, i*3+2), so keying on index equality can never match two
+  // different triangles even when they share a real edge -- every triangle
+  // ends up in its own shell. Keying on the actual 3D position (like
+  // UVSeamDetector already does) makes adjacency correct regardless of
+  // whether the geometry is indexed.
+  _edgeKey(posA, posB, uvA, uvB) {
     const P = this.uvTolerance < 0.001 ? 10000 : 1000;
-    const a = vertA < vertB ? vertA : vertB;
-    const b = vertA < vertB ? vertB : vertA;
-    const ua = vertA < vertB ? uvA : uvB;
-    const ub = vertA < vertB ? uvB : uvA;
+    const a = posA < posB ? posA : posB;
+    const b = posA < posB ? posB : posA;
+    const ua = posA < posB ? uvA : uvB;
+    const ub = posA < posB ? uvB : uvA;
     return `${a},${b},${Math.round(ua.x*P)},${Math.round(ua.y*P)},${Math.round(ub.x*P)},${Math.round(ub.y*P)}`;
+  }
+
+  _posKey(posAttr, index) {
+    if (!posAttr) return String(index);
+    const P = 10000;
+    return `${Math.round(posAttr.getX(index)*P)},${Math.round(posAttr.getY(index)*P)},${Math.round(posAttr.getZ(index)*P)}`;
   }
 
   buildShells(geometry) {
@@ -55,6 +87,7 @@ class UVShellDetector {
 
     const uvAttr = geometry.attributes.uv;
     if (!uvAttr || !uvAttr.count) return [];
+    const posAttr = geometry.attributes.position;
     const indexAttr = geometry.index;
     const triangleCount = indexAttr ? indexAttr.count / 3 : uvAttr.count / 3;
 
@@ -74,6 +107,7 @@ class UVShellDetector {
         faces.push({
           faceIndex: i,
           indices: [i0, i1, i2],
+          posKeys: [this._posKey(posAttr, i0), this._posKey(posAttr, i1), this._posKey(posAttr, i2)],
           uvs: [
             { x: uvAttr.getX(i0), y: uvAttr.getY(i0) },
             { x: uvAttr.getX(i1), y: uvAttr.getY(i1) },
@@ -88,7 +122,7 @@ class UVShellDetector {
     for (const face of faces) {
       for (let e = 0; e < 3; e++) {
         const key = this._edgeKey(
-          face.indices[e], face.indices[(e + 1) % 3],
+          face.posKeys[e], face.posKeys[(e + 1) % 3],
           face.uvs[e], face.uvs[(e + 1) % 3]
         );
         if (!edgeToFaces.has(key)) edgeToFaces.set(key, []);
@@ -147,67 +181,17 @@ class UVShellDetector {
     return this.shells;
   }
 
-  // Check if two faces share a UV edge (same UV coordinates)
-  facesShareUVEdge(f1, f2) {
-    for (let i = 0; i < 3; i++) {
-      const v1a = f1.indices[i], v1b = f1.indices[(i + 1) % 3];
-      const uv1a = f1.uvs[i],    uv1b = f1.uvs[(i + 1) % 3];
-      for (let j = 0; j < 3; j++) {
-        const v2a = f2.indices[j], v2b = f2.indices[(j + 1) % 3];
-        const uv2a = f2.uvs[j],    uv2b = f2.uvs[(j + 1) % 3];
-
-        // must share the same 3D vertices…
-        const sameVerts = (v1a === v2a && v1b === v2b) || (v1a === v2b && v1b === v2a);
-        // …and have matching UV pairs
-        const sameUVs   = (this.uvEquals(uv1a, uv2a) && this.uvEquals(uv1b, uv2b)) ||
-                          (this.uvEquals(uv1a, uv2b) && this.uvEquals(uv1b, uv2a));
-        if (sameVerts && sameUVs) return true;
-      }
-    }
-    return false;
-  }
-
-  // Generate boundary edges for a shell
+  // Every triangle edge in the shell, not just the outer boundary -- the UV
+  // preview is meant to show each face's outline (like a UV wireframe), so
+  // interior edges shared by two faces must still be drawn, not deduped away.
   generateShellEdges(shell) {
-    const edgeMap = new Map();
-
-    // Add all edges from faces in shell
+    const edges = [];
     for (const face of shell.faces) {
       for (let i = 0; i < 3; i++) {
-        const uv1 = face.uvs[i];
-        const uv2 = face.uvs[(i + 1) % 3];
-
-        // Create edge key based on UV coordinates
-        const key = this.getEdgeKey(uv1, uv2);
-
-        if (edgeMap.has(key)) {
-          // Edge shared by two faces - remove it (interior edge)
-          edgeMap.delete(key);
-        } else {
-          // New edge - add it
-          edgeMap.set(key, [uv1, uv2]);
-        }
+        edges.push([face.uvs[i], face.uvs[(i + 1) % 3]]);
       }
     }
-
-    // Remaining edges are shell boundaries
-    shell.edges = Array.from(edgeMap.values());
-  }
-
-  // Create consistent edge key for UV coordinates
-  getEdgeKey(uv1, uv2) {
-    const precision = 10000;
-    const x1 = Math.round(uv1.x * precision);
-    const y1 = Math.round(uv1.y * precision);
-    const x2 = Math.round(uv2.x * precision);
-    const y2 = Math.round(uv2.y * precision);
-
-    // Ensure consistent ordering
-    if (x1 < x2 || (x1 === x2 && y1 < y2)) {
-      return `${x1},${y1}-${x2},${y2}`;
-    } else {
-      return `${x2},${y2}-${x1},${y1}`;
-    }
+    shell.edges = edges;
   }
 }
 
@@ -525,16 +509,22 @@ class UVShellDetector {
   constructor() { this.shells = []; this.faceToShell = new Map(); this.uvTolerance = 0.0001; }
   reset() { this.shells = []; this.faceToShell.clear(); }
   uvEquals(uv1, uv2) { return Math.abs(uv1.x - uv2.x) < this.uvTolerance && Math.abs(uv1.y - uv2.y) < this.uvTolerance; }
-  _edgeKey(vertA, vertB, uvA, uvB) {
+  _edgeKey(posA, posB, uvA, uvB) {
     const P = this.uvTolerance < 0.001 ? 10000 : 1000;
-    const a = vertA < vertB ? vertA : vertB, b = vertA < vertB ? vertB : vertA;
-    const ua = vertA < vertB ? uvA : uvB, ub = vertA < vertB ? uvB : uvA;
+    const a = posA < posB ? posA : posB, b = posA < posB ? posB : posA;
+    const ua = posA < posB ? uvA : uvB, ub = posA < posB ? uvB : uvA;
     return a+','+b+','+Math.round(ua.x*P)+','+Math.round(ua.y*P)+','+Math.round(ub.x*P)+','+Math.round(ub.y*P);
+  }
+  _posKey(posAttr, index) {
+    if (!posAttr) return String(index);
+    const P = 10000;
+    return Math.round(posAttr.getX(index)*P)+','+Math.round(posAttr.getY(index)*P)+','+Math.round(posAttr.getZ(index)*P);
   }
   buildShells(geometry) {
     this.reset();
     const uvAttr = geometry.attributes.uv;
     if (!uvAttr || !uvAttr.count) return [];
+    const posAttr = geometry.attributes.position;
     const indexAttr = geometry.index;
     const triangleCount = indexAttr ? indexAttr.count / 3 : uvAttr.count / 3;
     const faces = [];
@@ -543,7 +533,9 @@ class UVShellDetector {
       if (indexAttr) { i0 = indexAttr.getX(i*3); i1 = indexAttr.getX(i*3+1); i2 = indexAttr.getX(i*3+2); }
       else { i0 = i*3; i1 = i*3+1; i2 = i*3+2; }
       if (i0 < uvAttr.count && i1 < uvAttr.count && i2 < uvAttr.count) {
-        faces.push({ faceIndex: i, indices: [i0,i1,i2], uvs: [
+        faces.push({ faceIndex: i, indices: [i0,i1,i2],
+          posKeys: [this._posKey(posAttr,i0), this._posKey(posAttr,i1), this._posKey(posAttr,i2)],
+          uvs: [
           { x: uvAttr.getX(i0), y: uvAttr.getY(i0) },
           { x: uvAttr.getX(i1), y: uvAttr.getY(i1) },
           { x: uvAttr.getX(i2), y: uvAttr.getY(i2) }
@@ -553,7 +545,7 @@ class UVShellDetector {
     const edgeToFaces = new Map();
     for (const face of faces) {
       for (let e = 0; e < 3; e++) {
-        const key = this._edgeKey(face.indices[e], face.indices[(e+1)%3], face.uvs[e], face.uvs[(e+1)%3]);
+        const key = this._edgeKey(face.posKeys[e], face.posKeys[(e+1)%3], face.uvs[e], face.uvs[(e+1)%3]);
         if (!edgeToFaces.has(key)) edgeToFaces.set(key, []);
         edgeToFaces.get(key).push(face.faceIndex);
       }
@@ -592,21 +584,13 @@ class UVShellDetector {
     return this.shells;
   }
   generateShellEdges(shell) {
-    const edgeMap = new Map();
+    const edges = [];
     for (const face of shell.faces) {
       for (let i = 0; i < 3; i++) {
-        const uv1 = face.uvs[i], uv2 = face.uvs[(i+1)%3];
-        const key = this.getEdgeKey(uv1, uv2);
-        if (edgeMap.has(key)) edgeMap.delete(key);
-        else edgeMap.set(key, [uv1, uv2]);
+        edges.push([face.uvs[i], face.uvs[(i+1)%3]]);
       }
     }
-    shell.edges = Array.from(edgeMap.values());
-  }
-  getEdgeKey(uv1, uv2) {
-    const P = 10000;
-    const x1 = Math.round(uv1.x*P), y1 = Math.round(uv1.y*P), x2 = Math.round(uv2.x*P), y2 = Math.round(uv2.y*P);
-    return (x1 < x2 || (x1 === x2 && y1 < y2)) ? x1+','+y1+'-'+x2+','+y2 : x2+','+y2+'-'+x1+','+y1;
+    shell.edges = edges;
   }
 }
 class UVSeamDetector {
@@ -740,7 +724,7 @@ class UVProcessor {
       if (!obj.isMesh) return;
       if (!obj.geometry?.attributes?.uv) return;
       // Skip wireframe/helper meshes added by Volare tools
-      if (obj.userData?.volareHelper || obj.userData?.isWireframeHelper) return;
+      if (obj.userData?.volareHelper || obj.userData?.isWireframeMesh) return;
       if (obj.type === 'LineSegments' || obj.type === 'Line') return;
       uvMeshes.push({
         mesh: obj,
@@ -815,9 +799,18 @@ class UVProcessor {
 
   _processWithWorker(geometry, meshName) {
     return new Promise((resolve, reject) => {
-      const uvArray = geometry.attributes.uv.array.slice();
-      const indexArray = geometry.index?.array.slice() || null;
-      const posArray = geometry.attributes.position?.array.slice() || null;
+      // Never take `.array` directly off a BufferAttribute headed for a worker.
+      // For InterleavedBufferAttribute, `.array` is the *whole shared buffer*
+      // (e.g. position+normal+uv packed together per vertex) -- GLTFLoader
+      // creates these whenever a glTF bufferView has a byteStride, which many
+      // real-world exports use. Slicing that raw gives the worker garbage it
+      // reads back as tightly-packed 2/3-float tuples. `.getX()/.getY()/.getZ()`
+      // are the only accessors that correctly apply stride/offset (and denormalize
+      // quantized data), so pack through those instead. Cheap even for large
+      // meshes -- this is the same O(n) walk the main-thread path already does.
+      const uvArray = packAttribute(geometry.attributes.uv, 2);
+      const indexArray = geometry.index ? packIndex(geometry.index) : null;
+      const posArray = geometry.attributes.position ? packAttribute(geometry.attributes.position, 3) : null;
 
       const transfers = [uvArray.buffer];
       if (indexArray) transfers.push(indexArray.buffer);

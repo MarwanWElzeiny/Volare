@@ -5,22 +5,22 @@ export const defaultModel = 'avocado';
 export const modelProfiles = {
   avocado: {
     label: 'Avocado',
-    model: './models/Avocado/glTF-Binary/Avocado.glb',
-    hdri: './models/HDR/studio_small_03_4k.hdr'
+    model: './models/Avocado/glTF/Avocado.gltf',
+    hdri: './models/HDRI/studio_small_03_4k.hdr'
   },
   brainstem: {
     label: 'BrainStem',
-    model: './models/BrainStem/glTF-Binary/BrainStem.glb',
-    hdri: './models/HDR/lonely_road_afternoon_puresky_4k.hdr'
+    model: './models/BrainStem/glTF/BrainStem.gltf',
+    hdri: './models/HDRI/lonely_road_afternoon_puresky_4k.hdr'
   },
   flyingknee: {
     label: 'Flying Knee Combo (FBX)',
-    model: './models/Flying/Model/Flying Knee Punch Combo.fbx',
-    hdri: './models/HDR/photo_studio_01_4k.hdr'
+    model: './models/Mannequin/Model/Flying Knee Punch Combo.fbx',
+    hdri: './models/HDRI/photo_studio_01_4k.hdr'
   }
 };
 
-export const defaultHdri = './models/HDR/studio_small_03_4k.hdr';
+export const defaultHdri = './models/HDRI/studio_small_03_4k.hdr';
 
 export const viewer = {
   antialias: true,

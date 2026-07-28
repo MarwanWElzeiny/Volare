@@ -12,7 +12,7 @@ export class LightingPreset {
     this._presetLights = [];
     this.presets = {
       studio: {
-        hdri: hdr('studio_small_09_4k.hdr'),
+        hdri: hdr('studio_small_09_1k.hdr'),
         exposure: 1.0,
         lights: [
           { type: 'DirectionalLight', color: 0xffffff, intensity: 1, position: [5, 5, 5] },
@@ -20,14 +20,14 @@ export class LightingPreset {
         ]
       },
       outdoor: {
-        hdri: hdr('meadow_4k.hdr'),
+        hdri: hdr('meadow_1k.hdr'),
         exposure: 0.8,
         lights: [
           { type: 'DirectionalLight', color: 0xfff4e6, intensity: 1.2, position: [10, 10, 5] }
         ]
       },
       dramatic: {
-        hdri: hdr('cobblestone_street_night_4k.hdr'),
+        hdri: hdr('cobblestone_street_night_1k.hdr'),
         exposure: 1.5,
         lights: [
           { type: 'SpotLight', color: 0xff4444, intensity: 2, position: [3, 6, 3], angle: 0.3 },

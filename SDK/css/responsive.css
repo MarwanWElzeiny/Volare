@@ -115,6 +115,43 @@
     }
 }
 
+/* Phones: full-viewport takeover, no slide/fade. The <=1400px rule below is a
+   bottom sheet meant for laptops/tablets ("giant panel on laptops" fix), but
+   max-width:1400px also matches every phone width, so phones inherited a
+   bottom sheet + open/close transition they were never supposed to have.
+   !important beats that block's own (non-!important) position/transform/
+   transition regardless of source order. */
+@media (max-width: 768px) {
+    #vlr-visual-toolkit {
+        position: fixed !important;
+        inset: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: calc(var(--vh, 1vh) * 100) !important;
+        max-width: 100vw !important;
+        max-height: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        transform: none !important;
+        transition: none !important;
+        opacity: 1;
+    }
+
+    #vlr-visual-toolkit:not(.active) {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    #vlr-visual-toolkit.active {
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
 @media (max-width: 1400px) and (min-width: 769px) {
     :root {
         --vlr-glass-blur: blur(12px) saturate(130%);
@@ -185,6 +222,17 @@
     #vlr-visual-toolkit:not(.active),
     #vlr-visual-toolkit:not(.active) * {
         pointer-events: none !important;
+    }
+
+    /* No hover on touch, and the toolkit is a bottom sheet here -- so the desktop
+       "tucked behind the animation panel" state (controls.css) is neutralised.
+       Closed means closed; the toolkit toggle is the only way in. */
+    #vlr-visual-toolkit:not(.active),
+    #vlr-visual-toolkit.active.vlr-toolkit-minimized {
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+        z-index: 2147483002 !important;
     }
 
     /* Phones/tablets: eliminate the idle behavior entirely -- no peek slide,

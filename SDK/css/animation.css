@@ -145,10 +145,16 @@
 
 .progress-fill {
     height: 100%;
+    width: 100%;
     background: rgb(var(--vlr-surface-rgb));
     border-radius: 3px;
-    transition: width 0.1s ease;
-    width: 0%;
+    /* Composited scaleX, not width: this panel has a backdrop-filter, and
+       writing `width` every frame forced a layout plus a full re-blur of the
+       glass behind it -- the main cause of the lag while animations played. */
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.1s linear;
+    will-change: transform;
 }
 
 .vlr-advanced-anim-preset,

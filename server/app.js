@@ -117,7 +117,7 @@ app.use(helmet({
         useDefaults: true,
         directives: {
             "default-src": ["'self'"],
-            "script-src": ["'self'", "'unsafe-inline'", "blob:", "data:", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com", "https://cdn.rawgit.com"],
+            "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "blob:", "data:", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com", "https://cdn.rawgit.com"],
             "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net/gh/iconoir-icons"],
             "font-src": ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
             "img-src": ["'self'", "data:", "blob:", "https:"],
@@ -388,7 +388,10 @@ app.use(express.static(publicRoot, {
 }));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(publicRoot, 'DEMO', 'index.html'));
+    // Redirect (not sendFile) so the browser's location actually becomes
+    // /DEMO/, letting the page's own relative asset paths (./scripts/...,
+    // ./models/...) resolve against the right base instead of against '/'.
+    res.redirect('/DEMO/index.html');
 });
 
 app.use((req, res) => {

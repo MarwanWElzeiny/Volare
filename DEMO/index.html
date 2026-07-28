@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Volare Demo</title>
-  <link rel="icon" type="image/png" href="./models/VolareTabHeader.png">
+  <link rel="icon" type="image/png" href="../media/VolareTabHeader.png">
 
   <link rel="stylesheet" href="./styles/navbar.css">
   <link rel="stylesheet" href="./styles/preview-box.css">
@@ -23,41 +23,9 @@
 <body>
   <nav id="navbar">
     <div class="nav-container">
-      <div class="nav-links left-links">
-        <ul>
-          <li><a href="#quick-tour">Examples</a></li>
-          <li><a href="#showreel">Documentation</a></li>
-        </ul>
-      </div>
-
       <div class="logo">
-        <a href="#"><img src="./models/Volare.png" alt="Volare Logo"></a>
+        <a href="#"><img src="../media/Volare.png" alt="Volare Logo"></a>
       </div>
-
-      <div class="nav-links right-links">
-        <ul>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </div>
-
-      <div class="mobile-toggle" id="menu-toggle">
-        <span class="bar"></span>
-        <span class="bar"></span>
-        <span class="bar"></span>
-      </div>
-    </div>
-
-    <div class="mobile-menu" id="mobile-menu">
-      <div class="close-btn" id="menu-close">
-        <span class="icon fas fa-times"></span>
-      </div>
-      <ul>
-        <li><a href="#quick-tour">Examples</a></li>
-        <li><a href="#showreel">Documentation</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
     </div>
   </nav>
 
@@ -70,7 +38,7 @@
   </div>
 
   <div class="wrapper-gallery">
-      <h1 class="name-artwork">Simple Models</h1>
+      <h1 class="name-artwork"></h1>
       <div class="gallery" id="gallery">
         <div class="image thumbnail" alt="Duck Model" data-model="./models/Duck/glTF/Duck.gltf">
           <span><img src="./models/Duck/screenshot/screenshot.png" alt="Duck Preview"></span>
@@ -102,7 +70,7 @@
           </div>
         </div>
 
-        <div class="image thumbnail" alt="Brain Stem Model" data-model="./models/BrainStem/glTF/BrainStem.gltf">
+        <div class="image thumbnail" alt="Brain Stem Model" data-model="./models/BrainStem/glTF/BrainStem.gltf" data-hdri="./models/HDRI/lonely_road_afternoon_puresky_4k.hdr">
           <span><img src="./models/BrainStem/screenshot/screenshot.gif" alt="Brain Stem Preview"></span>
           <div class="overlay">
             <i class="type fa-solid fa-play">
@@ -112,8 +80,8 @@
           </div>
         </div>
 
-        <div class="image thumbnail" alt="Flying Knee Combo (FBX)" data-model="./models/Flying/Model/Flying Knee Punch Combo.fbx">
-          <span><img src="./models/Flying/Thumbnail/Maximo1.png" alt="Maximo FBX Preview"></span>
+        <div class="image thumbnail" alt="Flying Knee Combo (FBX)" data-model="./models/Mannequin/Model/Flying Knee Punch Combo.fbx" data-hdri="./models/HDRI/photo_studio_01_4k.hdr">
+          <span><img src="./models/Mannequin/Thumbnail/Maximo1.png" alt="Maximo FBX Preview"></span>
           <div class="overlay">
             <i class="type fa-solid fa-play">
               <i class="typetwo"></i>
@@ -122,6 +90,35 @@
           </div>
         </div>
 
+        <div class="image thumbnail" alt="Damaged Helmet (PBR)" data-model="./models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb" data-hdri="./models/HDRI/venice_sunset_4k.hdr">
+          <span><img src="./models/DamagedHelmet/screenshot/screenshot.png" alt="Damaged Helmet Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="Fox (Multi-Animation)" data-model="./models/Fox/glTF-Binary/Fox.glb" data-hdri="./models/HDRI/meadow_4k.hdr">
+          <span><img src="./models/Fox/screenshot/screenshot.jpg" alt="Fox Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
+
+        <div class="image thumbnail" alt="Cesium Man (Skinned)" data-model="./models/CesiumMan/glTF-Binary/CesiumMan.glb" data-hdri="./models/HDRI/studio_small_03_4k.hdr">
+          <span><img src="./models/CesiumMan/screenshot/screenshot.gif" alt="Cesium Man Preview"></span>
+          <div class="overlay">
+            <i class="type fa-solid fa-play">
+              <i class="typetwo"></i>
+              <i class="fa-solid fa-vr-cardboard"></i>
+            </i>
+          </div>
+        </div>
       </div>
   </div>
 
@@ -160,7 +157,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js" integrity="sha384-2UI1PfnXFjVMQ7/ZDEF70CR943oH3v6uZrFQGGqJYlvhh4g6z6uVktxYbOlAczav" crossorigin="anonymous"></script>
   <script type="module" src="./scripts/VolareLoad.js"></script>
-  <script type="module" src="./scripts/Navbar.js"></script>
   <script src="../SDK/UI/LoadingScreen.js"></script>
 </body>
 </html>

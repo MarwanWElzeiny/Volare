@@ -4,10 +4,10 @@ import path from 'node:path';
 const root = process.cwd();
 
 const requiredPaths = [
-  'DEMO/index.html',
-  'DEMO/direct.html',
-  'DEMO/scripts/VolareLoad.js',
-  'DEMO/scripts/DemoBootstrap.js',
+  'Demo/index.html',
+  'Demo/direct.html',
+  'Demo/scripts/VolareLoad.js',
+  'Demo/scripts/DemoBootstrap.js',
   'SDK/Core/VolareViewer.js',
   'SDK/Core/createVolareViewer.js',
   'SDK/Core/PluginHost.js',
@@ -35,12 +35,12 @@ const legacyPaths = [
 ];
 
 const activeFilesToScan = [
-  'DEMO/index.html',
-  'DEMO/direct.html',
-  'DEMO/scripts/VolareLoad.js',
-  'DEMO/scripts/DemoBootstrap.js',
-  'DEMO/scripts/DemoDirectLoad.js',
-  'DEMO/scripts/DemoUIAdapter.js',
+  'Demo/index.html',
+  'Demo/direct.html',
+  'Demo/scripts/VolareLoad.js',
+  'Demo/scripts/DemoBootstrap.js',
+  'Demo/scripts/DemoDirectLoad.js',
+  'Demo/scripts/DemoUIAdapter.js',
 ];
 
 const forbiddenReferences = [

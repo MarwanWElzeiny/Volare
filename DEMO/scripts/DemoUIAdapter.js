@@ -10,9 +10,9 @@
 import { VolareCanvas, UIManager, ButtonManager, VolareHelpers, VolareQuickSetup } from '../../SDK/UI/ViewerUIController.js';
 import { setHdriBasePath } from '../../SDK/Managers/LightingController.js';
 
-setHdriBasePath('./models/HDR/');
+setHdriBasePath('./models/HDRI/');
 
-const watermarkUrl = './models/Volare.png';
+const watermarkUrl = '../media/Volare.png';
 
 // Demo-only DOM cache
 const DemoDOMCache = {
@@ -220,7 +220,10 @@ function initializeGallery(instance) {
     img.onclick = (event) => {
       event?.preventDefault?.();
       event?.stopImmediatePropagation?.();
-      const modelPath = img.dataset?.model;
+      const modelEl = img.closest('[data-model]') || img;
+      const hdriEl = img.closest('[data-hdri]') || modelEl;
+      const modelPath = img.dataset?.model || modelEl?.dataset?.model;
+      const hdriPath = img.dataset?.hdri || hdriEl?.dataset?.hdri || null;
 
       if (!modelPath) {
         console.warn('No data-model found on clicked image.');
@@ -230,6 +233,7 @@ function initializeGallery(instance) {
       const galleryEvent = new CustomEvent('volareGalleryClick', {
         detail: {
           modelPath,
+          hdriPath,
           quicknav: DemoDOMCache.quicknav,
           shadow,
           volareCanvas,

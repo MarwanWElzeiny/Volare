@@ -10,7 +10,6 @@ export class DirectorMode {
     this.isActive = false;
     this.currentSequence = null;
     this.sequences = [];
-    this.animationId = null;
     this.transitionDuration = 1500; // Faster transitions for more dynamic feel
     this.originalPosition = new THREE.Vector3();
     this.originalTarget = new THREE.Vector3();
@@ -19,6 +18,10 @@ export class DirectorMode {
     this.shakeIntensity = 0;
     this.shakeDuration = 0;
     this.shakeStartTime = 0;
+    // In-flight camera move, advanced by update(deltaTime) instead of a
+    // private requestAnimationFrame loop -- see the comment on update() for why.
+    this._move = null;
+    this._pauseTimer = null;
   }
 
   activate() {
@@ -40,10 +43,11 @@ export class DirectorMode {
 
   deactivate() {
     this.isActive = false;
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    if (this._pauseTimer) {
+      clearTimeout(this._pauseTimer);
+      this._pauseTimer = null;
     }
+    this._move = null;
     hideTopToast();
     // Re-enable controls
     this.controls.enabled = this.originalControlsEnabled;
@@ -202,69 +206,74 @@ export class DirectorMode {
         currentIndex = (currentIndex + 1) % this.sequences.length;
         // Variable pause between shots for more natural feel
         const pauseDuration = sequence.duration + (Math.random() * 1000 - 500);
-        setTimeout(playNext, Math.max(pauseDuration, 1000));
+        this._pauseTimer = setTimeout(playNext, Math.max(pauseDuration, 1000));
       });
     };
 
     playNext();
   }
 
+  // Builds the in-flight move state; update(deltaTime) advances it. Previously
+  // this ran its own requestAnimationFrame loop, entirely independent of the
+  // renderer's frame scheduling (renderer.setAnimationLoop -- which on the
+  // WebGPU backend times differently than plain rAF). Two independently
+  // self-scheduled loops racing every frame, with no guaranteed ordering
+  // between them, is what produced the visible stutter. Now there is exactly
+  // one per-frame tick (the render loop's), and this is just state advanced by it.
   animateToPosition(targetPos, targetLookAt, targetRoll = 0, dynamicMovement = false, onComplete) {
-    // Cancel any in-flight animation before starting a new one
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    this._move = {
+      startPos: this.camera.position.clone(),
+      targetPos: targetPos.clone(),
+      startLookAt: this.controls.target ? this.controls.target.clone() : new THREE.Vector3(),
+      targetLookAt: targetLookAt ? targetLookAt.clone() : null,
+      startRoll: this.camera.rotation.z,
+      targetRoll,
+      dynamicMovement,
+      elapsedMs: 0,
+      onComplete
+    };
+  }
+
+  // Called once per rendered frame (see AnalysisController.update()) with the
+  // real elapsed time for that frame, so the transition takes the same wall-clock
+  // duration regardless of framerate.
+  update(deltaTime) {
+    if (!this.isActive || !this._move || !deltaTime) return;
+    const move = this._move;
+    move.elapsedMs += deltaTime * 1000;
+    const progress = Math.min(move.elapsedMs / this.transitionDuration, 1);
+
+    // easeOutCubic starts with immediate velocity — no zero-velocity stutter at segment start
+    let eased = move.dynamicMovement ? this.easeInOutQuart(progress) : this.easeOutCubic(progress);
+
+    // Apply dynamic movement variations
+    let finalEased = eased;
+    if (move.dynamicMovement && progress > 0.1 && progress < 0.9) {
+      // Add subtle oscillation for more organic movement
+      const oscillation = Math.sin(progress * Math.PI * 3) * 0.02;
+      finalEased = Math.max(0, Math.min(1, eased + oscillation));
     }
 
-    const startPos = this.camera.position.clone();
-    const startLookAt = this.controls.target ? this.controls.target.clone() : new THREE.Vector3();
-    const startRoll = this.camera.rotation.z;
-    const startTime = performance.now();
+    // Interpolate position
+    this.camera.position.lerpVectors(move.startPos, move.targetPos, finalEased);
 
-    const animateDirector = () => {
-      const elapsed = performance.now() - startTime;
-      const progress = Math.min(elapsed / this.transitionDuration, 1);
+    // Interpolate look-at target
+    if (this.controls.target && move.targetLookAt) {
+      this.controls.target.lerpVectors(move.startLookAt, move.targetLookAt, finalEased);
+    }
 
-      // easeOutCubic starts with immediate velocity — no zero-velocity stutter at segment start
-      let eased;
-      if (dynamicMovement) {
-        eased = this.easeInOutQuart(progress);
-      } else {
-        eased = this.easeOutCubic(progress);
-      }
+    // Apply camera roll for cinematic effect
+    this.camera.rotation.z = THREE.MathUtils.lerp(move.startRoll, move.targetRoll, finalEased);
 
-      // Apply dynamic movement variations
-      let finalEased = eased;
-      if (dynamicMovement && progress > 0.1 && progress < 0.9) {
-        // Add subtle oscillation for more organic movement
-        const oscillation = Math.sin(progress * Math.PI * 3) * 0.02;
-        finalEased = Math.max(0, Math.min(1, eased + oscillation));
-      }
+    // Apply camera shake
+    this.applyCameraShake();
 
-      // Interpolate position
-      this.camera.position.lerpVectors(startPos, targetPos, finalEased);
+    this.controls.update();
 
-      // Interpolate look-at target
-      if (this.controls.target && targetLookAt) {
-        this.controls.target.lerpVectors(startLookAt, targetLookAt, finalEased);
-      }
-
-      // Apply camera roll for cinematic effect
-      this.camera.rotation.z = THREE.MathUtils.lerp(startRoll, targetRoll, finalEased);
-
-      // Apply camera shake
-      this.applyCameraShake();
-
-      this.controls.update();
-
-      if (progress < 1 && this.isActive) {
-        this.animationId = requestAnimationFrame(animateDirector);
-      } else if (onComplete) {
-        onComplete();
-      }
-    };
-
-    animateDirector();
+    if (progress >= 1) {
+      this._move = null;
+      move.onComplete?.();
+    }
   }
 
   applyCameraShake() {
@@ -307,9 +316,11 @@ export class DirectorMode {
   skipToNext() {
     if (!this.isActive || this.sequences.length === 0) return;
 
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
+    if (this._pauseTimer) {
+      clearTimeout(this._pauseTimer);
+      this._pauseTimer = null;
     }
+    this._move = null;
 
     // Find current sequence index and move to next
     const currentIndex = this.sequences.findIndex(seq => seq === this.currentSequence);

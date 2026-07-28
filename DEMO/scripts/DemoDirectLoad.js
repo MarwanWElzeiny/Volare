@@ -84,7 +84,7 @@ function applyHdriSelection(hdriPath) {
 }
 
 function initDirect() {
-  setHdriBasePath('./models/HDR/');
+  setHdriBasePath('./models/HDRI/');
   const config = getModelConfig();
   const modelPath = config.model;
   const hdriPath = config.hdri || defaultHdri;

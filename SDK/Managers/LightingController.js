@@ -1,5 +1,5 @@
 import '../Utils/ssrGlobalsShim.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import * as THREE from 'three';
 import { PMREMGenerator as NodePMREMGenerator } from 'three/webgpu';
 
@@ -24,7 +24,9 @@ export const VOLARE_HDRI_PRESETS = [
   { id: 'venice-sunset', label: 'Venice Sunset', file: 'venice_sunset_4k.hdr', image: 'venice_sunset.jpeg' },
   { id: 'studio-small-03', label: 'Studio Small 03', file: 'studio_small_03_4k.hdr', image: 'studio_small_03.jpeg' },
   { id: 'studio-small-09', label: 'Studio Small 09', file: 'studio_small_09_4k.hdr', image: 'studio_small_09.jpeg' },
-  { id: 'kloofendal-partly-cloudy', label: 'Kloofendal 48d Partly Cloudy', file: 'kloofendal_48d_partly_cloudy_4k.hdr', image: 'kloofendal_48d_partly_cloudy.jpeg' }
+  { id: 'kloofendal-partly-cloudy', label: 'Kloofendal 48d Partly Cloudy', file: 'kloofendal_48d_partly_cloudy_4k.hdr', image: 'kloofendal_48d_partly_cloudy.jpeg' },
+  { id: 'cobblestone-street-night', label: 'Cobblestone Street Night', file: 'cobblestone_street_night_4k.hdr', image: 'cobblestone_street_night.jpeg' },
+  { id: 'meadow', label: 'Meadow', file: 'meadow_4k.hdr', image: 'meadow.jpeg' }
 ];
 
 // Presets added at runtime by the integrator. Kept separate from the built-in
@@ -127,7 +129,7 @@ export class LightingManager {
       : new THREE.PMREMGenerator(renderer);
     this.currentEnvironmentMap = null;
     this.currentEnvironmentUrl = null;
-    this.hdrLoader = new RGBELoader();
+    this.hdrLoader = new HDRLoader();
     this.isEnvironmentEnabled = true;
     this.config = { ...DEFAULT_ENVIRONMENT_CONFIG };
     this.lastError = null;
@@ -167,7 +169,8 @@ export class LightingManager {
   resolveHDRI(config) {
     const presetId = config.preset || config.hdriPreset;
     const hdri = config.hdri || config.url || null;
-    const preset = VOLARE_HDRI_PRESETS.find(item => item.id === presetId || item.label === presetId);
+    const allPresets = [...VOLARE_HDRI_PRESETS, ...customHdriPresets];
+    const preset = allPresets.find(item => item.id === presetId || item.label === presetId);
     return preset ? hdr(preset.file) : hdri;
   }
 

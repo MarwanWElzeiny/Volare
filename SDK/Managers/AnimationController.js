@@ -7,7 +7,11 @@ function escapeHTML(str) {
 }
 
 export class AnimationManager {
+  // Timeline/frame-counter DOM sync interval while playing (ms).
+  static PROGRESS_SYNC_MS = 66;
+
   constructor() {
+    this._lastProgressSync = 0;
     this.mixer = null;
     this.animations = [];
     this.activeActions = [];
@@ -76,6 +80,9 @@ export class AnimationManager {
         this.dispose();
         return false;
       }
+      document.dispatchEvent(new CustomEvent('volare:visual-toolkit-state', {
+        detail: { type: 'animation-panel-open' }
+      }));
       return true;
     }
     this.refreshAnimationPanelVisibility();
@@ -373,9 +380,14 @@ export class AnimationManager {
       this.syncPlaybackStateFromActions('Stopped');
     }
 
-    if (this.isPlaying) {
-      this.updateAnimationProgress();
-    }
+    if (!this.isPlaying) return;
+    // ponytail: the readout only has to look live, not be frame-exact. Syncing it
+    // at ~15Hz instead of every frame keeps the DOM writes (and the glass panel's
+    // re-blur) off the render loop. Raise PROGRESS_SYNC_MS if it looks steppy.
+    const now = performance.now();
+    if (now - this._lastProgressSync < AnimationManager.PROGRESS_SYNC_MS) return;
+    this._lastProgressSync = now;
+    this.updateAnimationProgress();
   }
 
   getRealPlaybackState() {
@@ -631,7 +643,8 @@ export class AnimationManager {
   updateProgressBar(progress) {
     const progressFill = document.getElementById('progress-bar');
     if (progressFill) {
-      progressFill.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+      const clamped = Math.max(0, Math.min(1, progress));
+      progressFill.style.transform = `scaleX(${clamped.toFixed(4)})`;
     }
 
     const mode = this.currentDisplayMode || 'time';

@@ -8,6 +8,7 @@ import './DemoUIAdapter.js';
 let viewerPlugin = null;
 let viewer = null;
 let selectedModelPath = null;
+let selectedHdriPath = null;
 let warningShownThisSession = false;
 let developerModeAllowedSnapshot = null;
 
@@ -15,11 +16,12 @@ window.resetVolareDemoState = function resetVolareDemoState() {
   viewerPlugin = null;
   viewer = null;
   selectedModelPath = null;
+  selectedHdriPath = null;
 };
 
 // Core initialization function
-function initVolare(path = null) {
-  setHdriBasePath('./models/HDR/');
+function initVolare(path = null, options = {}) {
+  setHdriBasePath('./models/HDRI/');
   if (developerModeAllowedSnapshot === null) {
     const DeveloperMode = true;
     developerModeAllowedSnapshot = DeveloperMode === true;
@@ -34,6 +36,9 @@ function initVolare(path = null) {
   }
 
   selectedModelPath = path || selectedModelPath;
+  if (options && 'hdri' in options) {
+    selectedHdriPath = options.hdri;
+  }
 
   const volareCanvas = document.getElementById('VolareCanvas');
   volareCanvas?.classList.remove('is-warning');
@@ -53,13 +58,18 @@ function initVolare(path = null) {
       enableShadows: true,
       fov: 30
     });
-    viewer.setEnvironment({ preset: 'lonely-road-afternoon' });
   }
 
   if (selectedModelPath) {
     viewer.loadModel(selectedModelPath).then(() => {
       viewer.centerCameraOnModel();
       viewer.materialManager?.applyOriginalMaterials(viewer.currentModel);
+
+      if (selectedHdriPath) {
+        viewer.setEnvironment(selectedHdriPath);
+      } else {
+        viewer.setEnvironment({ preset: viewer.defaultEnvironmentPath || 'lonely-road-afternoon' });
+      }
     }).catch(error => {
       console.error('Failed to load model:', error);
       showToast("<i class='fa-solid fa-circle-exclamation'></i> Error", "Model load failed.<br>" + error.message);
@@ -112,15 +122,16 @@ function hideForm(formId = 'model-access-form') {
 }
 
 // Canvas display functions
-function showPopup(modelPath, quicknav, shadow, volareCanvas, uiManager = null) {
+function showPopup(modelPath, quicknav, shadow, volareCanvas, uiManager = null, { hdri = null } = {}) {
   if (warningShownThisSession || window.volareWarningShownThisSession) {
-    showCanvas(modelPath, quicknav, shadow, volareCanvas, uiManager);
+    showCanvas(modelPath, quicknav, shadow, volareCanvas, uiManager, { hdri });
     return;
   }
 
   warningShownThisSession = true;
   window.volareWarningShownThisSession = true;
   setModelPath(modelPath);
+  selectedHdriPath = hdri;
 
   if (quicknav) quicknav.classList.add("fade");
   document.body.style.overflow = "hidden";
@@ -140,7 +151,7 @@ function showPopup(modelPath, quicknav, shadow, volareCanvas, uiManager = null) 
   if (form) form.style.display = 'block';
 }
 
-function showCanvas(modelPath, quicknav, shadow, volareCanvas, uiManager = null) {
+function showCanvas(modelPath, quicknav, shadow, volareCanvas, uiManager = null, { hdri = null } = {}) {
   if (!modelPath) {
     console.error('No model path provided');
     return;
@@ -165,7 +176,7 @@ function showCanvas(modelPath, quicknav, shadow, volareCanvas, uiManager = null)
       volareCanvas.classList.remove("is-warning");
     }
 
-    initVolare(modelPath);
+    initVolare(modelPath, { hdri });
 
     setTimeout(() => {
       if (uiManager?.hideLoading) {
@@ -202,8 +213,8 @@ function getViewer() {
 // Legacy event system support
 function connectToGallery() {
   document.addEventListener('volareGalleryClick', (e) => {
-    const { modelPath, quicknav, shadow, volareCanvas, uiManager } = e.detail;
-    showPopup(modelPath, quicknav, shadow, volareCanvas, uiManager);
+    const { modelPath, hdriPath, quicknav, shadow, volareCanvas, uiManager } = e.detail;
+    showPopup(modelPath, quicknav, shadow, volareCanvas, uiManager, { hdri: hdriPath || null });
     setupSubmitButton('model-access-form');
   });
 }
@@ -288,7 +299,7 @@ class VolareInstance {
   }
 
   setupGallery() {
-    const selector = this.config.gallery.selector || '.gallery img';
+    const selector = this.config.gallery.selector || '[data-model], .gallery img, .image';
 
     // Use more defensive query selection
     const images = document.querySelectorAll(selector);
@@ -303,7 +314,10 @@ class VolareInstance {
         img.addEventListener('click', (e) => {
           if (img.dataset.volareLegacyGallery === 'true') return;
           e.preventDefault();
-          const modelPath = img.dataset.model || img.closest('[data-model]')?.dataset.model;
+          const modelEl = img.closest('[data-model]') || img;
+          const hdriEl = img.closest('[data-hdri]') || modelEl;
+          const modelPath = img.dataset.model || modelEl?.dataset.model;
+          const hdriPath = img.dataset.hdri || hdriEl?.dataset.hdri || null;
 
           if (!modelPath) {
             console.warn('No data-model attribute found on clicked image');
@@ -311,9 +325,9 @@ class VolareInstance {
           }
 
           if (this.config.gallery.showForm) {
-            this.showWithForm(modelPath);
+            this.showWithForm(modelPath, { hdri: hdriPath });
           } else {
-            this.showCanvas(modelPath);
+            this.showCanvas(modelPath, { hdri: hdriPath });
           }
         });
         img.setAttribute('data-volare-bound', 'true');
@@ -322,14 +336,14 @@ class VolareInstance {
   }
 
   // Public API methods
-  async showCanvas(modelPath) {
+  async showCanvas(modelPath, { hdri = null } = {}) {
     const elements = this.getDOMElements();
-    showCanvas(modelPath, elements.quicknav, elements.shadow, elements.volareCanvas, this.uiManager);
+    showCanvas(modelPath, elements.quicknav, elements.shadow, elements.volareCanvas, this.uiManager, { hdri });
   }
 
-  async showWithForm(modelPath) {
+  async showWithForm(modelPath, { hdri = null } = {}) {
     const elements = this.getDOMElements();
-    showPopup(modelPath, elements.quicknav, elements.shadow, elements.volareCanvas, this.uiManager);
+    showPopup(modelPath, elements.quicknav, elements.shadow, elements.volareCanvas, this.uiManager, { hdri });
     setupSubmitButton('model-access-form');
   }
 

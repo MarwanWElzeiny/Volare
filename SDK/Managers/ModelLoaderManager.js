@@ -202,6 +202,7 @@ export class VolareManager {
             this.scene.add(this.currentModel);
           }
 
+          this.disableCullingForAnimatedMeshes(this.currentModel);
           this.materialManager?.storeOriginalMaterials(this.currentModel);
           let hasAnimations = false;
           try {
@@ -239,6 +240,22 @@ export class VolareManager {
           reject(error);
         }
       );
+    });
+  }
+
+  /**
+   * Skinned and morph-target meshes keep the bounding volume of their *bind* pose,
+   * and a SkinnedMesh's matrixWorld doesn't reflect skinning at all -- so three.js
+   * frustum-culls limbs that animate outside those stale bounds and parts of the
+   * model blink out. Worst with Follow Model, which keeps the camera close so more
+   * of the model sits near the frustum edge. Opting these meshes out of culling is
+   * cheaper and more reliable than recomputing bounds every frame.
+   */
+  disableCullingForAnimatedMeshes(root) {
+    root?.traverse?.(child => {
+      if (child.isSkinnedMesh || child.morphTargetInfluences?.length) {
+        child.frustumCulled = false;
+      }
     });
   }
 

@@ -3,8 +3,10 @@ import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js
 
 const NORMAL_LENGTH = 0.1;
 const NORMAL_COLOR = 0x00ff00;
-// Cap sampled arrows per SkinnedMesh to keep CPU skinning bounded
 const MAX_SKINNED_ARROWS = 4000;
+const _pos = new THREE.Vector3();
+const _end = new THREE.Vector3();
+const _delta = new THREE.Vector3();
 
 export class NormalVectorVisualizer {
     constructor(scene) {
@@ -87,10 +89,6 @@ export class NormalVectorVisualizer {
         const morphInfluences = mesh.morphTargetInfluences;
         const applyBone = mesh.applyBoneTransform?.bind(mesh) || mesh.boneTransform?.bind(mesh);
         const matrixWorld = mesh.matrixWorld;
-
-        const _pos = new THREE.Vector3();
-        const _end = new THREE.Vector3();
-        const _delta = new THREE.Vector3();
 
         let offset = 0;
         for (const idx of indices) {
